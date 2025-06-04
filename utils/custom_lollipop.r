@@ -82,10 +82,15 @@ my_lollipop <- function(dat.genetics.unique, current.gene, diseases=NULL, protei
 #             geom_text(data = protein_domain %>% distinct(interpro_description, .keep_all = TRUE) %>% mutate(interpro_mid = (interpro_end + interpro_start)/2), aes(x=interpro_mid,
 #                                   y=height / 2 ,
 #                                   label = interpro_description)) + 
-            scale_fill_manual(values = getPalette(colourCount))+
+            scale_fill_manual(values = getPalette(colourCount), labels = function(x) str_wrap(x, width = 40))+
             theme_void() +
-            theme(legend.position = "bottom") +
-            guides(fill=guide_legend(nrow=ifelse(colourCount < 3, 1, colourCount %/% 2))) +
+            theme(
+                legend.position = "bottom", 
+                legend.text = element_text(size = 16), 
+                legend.title = element_blank(),
+                plot.margin = margin(0, 1, 1, 1, "cm"),
+            ) +
+            guides(fill = guide_legend(nrow = ifelse(colourCount < 3, 1, colourCount %/% 2))) +
             xlim(0, protein_length+10)
 
     ## 2. lollipop
@@ -116,7 +121,15 @@ my_lollipop <- function(dat.genetics.unique, current.gene, diseases=NULL, protei
         xlim(0, protein_length + 10) +
         ylim(min(dat.score$score), max(dat.score$score)) +
         theme_minimal() +
-        theme(legend.position='top') + 
+        theme(
+            legend.position='top', 
+            legend.text = element_text(size = 16), 
+            legend.title = element_blank(),
+            plot.margin = margin(1, 1, 0, 1, "cm"),
+            axis.title = element_text(size = 22),
+            axis.text.y = element_text(size = 16),
+            axis.text.x = element_text(size = 16),
+        ) + 
         scale_colour_manual(values=colors.mutation_type)
     
     p.final = ggarrange(
@@ -128,7 +141,7 @@ my_lollipop <- function(dat.genetics.unique, current.gene, diseases=NULL, protei
         heights=c(4 * 4, 8), 
         align="v")
 
-    p.final <- annotate_figure(p.final, top = text_grob(current.gene, color="black", face="bold", size=14))
+    p.final <- annotate_figure(p.final, top = text_grob(current.gene, color="black", face="bold", size=22))
 
     return(p.final)
 }

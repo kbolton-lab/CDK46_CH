@@ -215,13 +215,26 @@ format_date_vector <- function(datetime_vector) {
         )
     })
 }
+
+get_random_date_from_deid <- function(deid) {
+    # Use DEID as seed
+    set.seed(as.numeric(deid))
+    # Generate random date
+    start_date <- as.Date("2000-01-01")
+    end_date <- as.Date("2022-12-31")
+    start_date + sample(0:(end_date - start_date), 1)
+}
+
 rbind(
     carlos_table %>%
-        mutate(
-            TimePoint = ifelse(whichdraw == 1, "TP1", "TP2"),
-            SampleCollectionDate = as.Date("2022-01-01")
-        ) %>%
-        dplyr::select(DEID, SampleDeID, SampleCollectionDate, TimePoint),
+    mutate(
+        TimePoint = ifelse(whichdraw == 1, "TP1", "TP2"),
+        SampleCollectionDate = case_when(
+            whichdraw == 1 ~ get_random_date_from_deid(gsub("PA", "", DEID)),
+            whichdraw == 2 ~ get_random_date_from_deid(gsub("PA", "", DEID)) + CycleLength
+        )
+    ) %>%
+    dplyr::select(DEID, SampleDeID, SampleCollectionDate, TimePoint),
     g1_csv %>%
         mutate(
             TimePoint = ifelse(whichdraw == 1, "C1D1", "C5D1"),

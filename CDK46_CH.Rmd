@@ -72,16 +72,7 @@ g1_tp <- rbind(
     sclc_tp %>% mutate(Cohort = if_else(Trilaciclib == "Untreated", "Untreated", "SCLC")), 
     tnbc_tp %>% mutate(Cohort = "TNBC"), 
     crc_tp %>% mutate(Cohort = "CRC")
-) %>%
-mutate(
-    prepreVAF = ifelse(is.na(prepreVAF), 0, prepreVAF),
-    preVAF = ifelse(is.na(preVAF), 0, preVAF),
-    duringVAF = ifelse(is.na(duringVAF), 0, duringVAF),
-    postVAF = ifelse(is.na(postVAF), 0, postVAF),
-    postpostVAF = ifelse(is.na(postpostVAF), 0, postpostVAF)
-) %>%
-filter(ifelse(Cohort == "Untreated", change_in_days < 350, TRUE))   # To keep the Untreated to be similar to the time frame of the treated
-
+)
 # Demographics Dataframe
 g1_demo <- fread(paste0(data_file_path, "g1_demo.csv"))
 g1_extra_demo <- fread(paste0(data_file_path, "g1_sra_extra_columns.csv"))
@@ -292,9 +283,24 @@ g1_tp <- g1_tp %>%
         )
     )
 
-# Small change to remove Missense Variants for PPM1D
+# Small change to remove Missense Variants for PPM1D from the raw data
 g1_df <- g1_df %>% filter(!(Gene == "PPM1D" & VariantClass == "missense_variant"))
-g1_tp <- g1_tp %>% filter(!(Gene == "PPM1D" & VariantClass == "missense_variant"))
+
+# Even though Timepoints already has Growth Rate, we will calculate it again to ensure consistency
+g1_tp %>%
+    mutate(
+        growth_rate_check = case_when(
+            compare_group == "PrevsPost" ~ log(postVAF/preVAF) / change_in_days,
+            compare_group == "C1D1vsC5D1" ~ log(postVAF/preVAF) / change_in_days,
+            compare_group == "C1D1vsMaintenance" ~ log(postVAF/preVAF) / change_in_days,
+            compare_group == "C1D1vsC7D1" ~ log(duringVAF/preVAF) / change_in_days,
+            TRUE ~ NA_real_
+        )
+    ) %>%
+    # We will check if the growth rate differs by more than 1e-8
+    filter(abs(growth_rate - growth_rate_check) > 1e-8) %>%
+    select(deid_key, Cohort, growth_rate, growth_rate_check)
+# There are only 2 values which when rounded to the nearest 0.001 are consistent
 ```
 
 # Reference Variables
@@ -712,6 +718,12 @@ df_to_plot <- g1_tp %>%
         )
     )
 
+# Calculate using Log10
+df_to_plot <- df_to_plot %>%
+    mutate(
+        growth_rate = log10(postVAF/preVAF) / change_in_days
+    )
+
 # df_to_plot <- df_to_plot %>%
 #     filter(
 #         !(preVAF < 0.002 & postVAF < 0.002)# & all_time_points == FALSE)
@@ -877,7 +889,7 @@ counts <- df_to_plot %>%
     group_by(Trilaciclib, Gene_Class) %>%
     summarise(n = n(), .groups = "drop")
 
-fig1f <- df_to_plot %>%
+df_to_plot %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
     ggplot(

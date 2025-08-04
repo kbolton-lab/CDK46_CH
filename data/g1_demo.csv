@@ -119,34 +119,16 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 12595004,3611898,PostTx,Male,White,Not Hispanic or Latino,Former,71.5229295003422,Trilaciclib,SCLC
 10125002,3524834,PreTx,Female,White,Not Hispanic or Latino,Former,63,Placebo,SCLC
 10125002,3547333,PostTx,Female,White,Not Hispanic or Latino,Former,63.517,Placebo,SCLC
-10125002,3706444,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,64.392,Placebo,SCLC
-10315001,3754853,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,69.45,Placebo,SCLC
-12125001,3444117,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,76.1083,Trilaciclib,SCLC
-12155003,3547379,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,66.7083,Placebo,SCLC
-12155006,3547203,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,61.8167,Placebo,SCLC
-12215003,3667233,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,52.8167,Placebo,SCLC
-12225001,3706455,PostPostMaintenance,Male,White,Unknown,Former,76.05,Placebo,SCLC
 12235004,3385708,PreTx,Female,White,Not Hispanic or Latino,Current,56,Placebo,SCLC
 12235004,3524775,PostTx,Female,White,Not Hispanic or Latino,Current,56.5167,Placebo,SCLC
-12395001,3667225,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,58.275,Placebo,SCLC
-12415002,3667232,PostPostMaintenance,Male,White,Not Hispanic or Latino,Current,46.05,Trilaciclib,SCLC
-12435003,3667231,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,54.1083,Placebo,SCLC
-12445001,3706452,PostPostMaintenance,Male,White,Not Hispanic or Latino,Current,63.933,Trilaciclib,SCLC
-12465001,3547369,PostPostMaintenance,Male,White,Not Hispanic or Latino,Current,63.933,Trilaciclib,SCLC
 12465003,3469778,PreTx,Male,White,Not Hispanic or Latino,Current,65,Placebo,SCLC
 12465003,3469749,PostTx,Male,White,Not Hispanic or Latino,Current,65.5167,Placebo,SCLC
-12465004,3547351,PostPostMaintenance,Male,White,Not Hispanic or Latino,Current,61.8167,Trilaciclib,SCLC
-12525002,3706437,PostPostMaintenance,Female,White,Not Hispanic or Latino,Current,48.9333,Trilaciclib,SCLC
 12525004,3524724,PreTx,Female,White,Not Hispanic or Latino,Never,76,Placebo,SCLC
 12525004,3547337,PostTx,Female,White,Not Hispanic or Latino,Never,76.5167,Placebo,SCLC
 12555002,3547371,PreTx,Male,White,Not Hispanic or Latino,Current,51,Trilaciclib,SCLC
 12555002,3547318,PostTx,Male,White,Not Hispanic or Latino,Current,51.5167,Trilaciclib,SCLC
-12555009,3724754,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,60.05,Placebo,SCLC
 12555010,3524770,PreTx,Female,White,Not Hispanic or Latino,Former,64,Trilaciclib,SCLC
 12555010,3547354,PostTx,Female,White,Not Hispanic or Latino,Former,64.5167,Trilaciclib,SCLC
-12555010,3849278,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,65.6833,Trilaciclib,SCLC
-12565001,3547131,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,65.8167,Trilaciclib,SCLC
-12595004,3724750,PostPostMaintenance,Male,White,Not Hispanic or Latino,Former,72.3917,Trilaciclib,SCLC
 1017002,3305718,PreTx,Female,White,Not Hispanic or Latino,Former,62,Placebo,TNBC
 1017002,3410164,MidTx,Female,White,Not Hispanic or Latino,Former,62.4,Placebo,TNBC
 1111001,3338489,PreTx,Female,Other,Hispanic or Latino,Never,47,Trilaciclib,TNBC
@@ -155,7 +137,6 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1111003,3410200,PreTx,Female,White,Not Hispanic or Latino,Never,55,Trilaciclib,TNBC
 1111003,3547421,MidTx,Female,White,Not Hispanic or Latino,Never,55.4,Trilaciclib,TNBC
 1111003,3783490,PostTx,Female,White,Not Hispanic or Latino,Never,56.6612021857924,Trilaciclib,TNBC
-1111003,3783501,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,56.827868852459,Trilaciclib,TNBC
 1111004,3475497,PreTx,Female,White,Not Hispanic or Latino,Never,48,Trilaciclib,TNBC
 1111004,3475476,MidTx,Female,White,Not Hispanic or Latino,Never,48.4,Trilaciclib,TNBC
 1111004,3464996,PostTx,Female,White,Not Hispanic or Latino,Never,48.5765027322404,Trilaciclib,TNBC
@@ -180,7 +161,6 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1122001,3305734,PreTx,Female,Asian,Hispanic or Latino,Never,42,Trilaciclib,TNBC
 1122001,3547403,MidTx,Female,Asian,Hispanic or Latino,Never,42.4,Trilaciclib,TNBC
 1122001,3725327,PostTx,Female,Asian,Hispanic or Latino,Never,43.8907103825137,Trilaciclib,TNBC
-1122001,3988006,PostPostMaintenance,Female,Asian,Hispanic or Latino,Never,44.0573770491803,Trilaciclib,TNBC
 1122002,3475524,MidTx,Female,White,Not Hispanic or Latino,Former,65.4,Trilaciclib,TNBC
 1122002,3564780,PostTx,Female,White,Not Hispanic or Latino,Former,65.5765027322405,Trilaciclib,TNBC
 1122002,3305721,PreTx,Female,White,Not Hispanic or Latino,Former,65,Trilaciclib,TNBC
@@ -192,9 +172,7 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1130001,3305715,PreTx,Female,White,Not Hispanic or Latino,Never,44,Trilaciclib,TNBC
 1130001,3465009,MidTx,Female,White,Not Hispanic or Latino,Never,44.4,Trilaciclib,TNBC
 1130001,3465017,PostTx,Female,White,Not Hispanic or Latino,Never,44.3989071038251,Trilaciclib,TNBC
-1130001,3475520,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,44.5655737704918,Trilaciclib,TNBC
 1131004,3410227,PostTx,Female,White,Not Hispanic or Latino,Former,68.2841530054645,Trilaciclib,TNBC
-1131004,3410106,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,68.4508196721312,Trilaciclib,TNBC
 1131004,3305792,PreTx,Female,White,Not Hispanic or Latino,Former,68,Trilaciclib,TNBC
 1131005,3410302,PreTx,Female,White,Not Hispanic or Latino,Never,57,Placebo,TNBC
 1131005,3410290,MidTx,Female,White,Not Hispanic or Latino,Never,57.4,Placebo,TNBC
@@ -209,90 +187,67 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1131014,3475532,PreTx,Female,White,Not Hispanic or Latino,Never,69,Trilaciclib,TNBC
 1131014,3564778,MidTx,Female,White,Not Hispanic or Latino,Never,69.4,Trilaciclib,TNBC
 1131014,3611931,PostTx,Female,White,Not Hispanic or Latino,Never,69.6284153005465,Trilaciclib,TNBC
-1131014,3410113,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,69.7950819672131,Trilaciclib,TNBC
 1131015,3564779,MidTx,Female,Black,Not Hispanic or Latino,Never,41.4,Placebo,TNBC
 1131015,3611903,PostTx,Female,Black,Not Hispanic or Latino,Never,41.8060109289617,Placebo,TNBC
 1131015,3410159,PreTx,Female,Black,Not Hispanic or Latino,Never,41,Placebo,TNBC
 1133002,3305713,PreTx,Female,White,Not Hispanic or Latino,Former,66,Trilaciclib,TNBC
 1133002,3410173,MidTx,Female,White,Not Hispanic or Latino,Former,66.4,Trilaciclib,TNBC
 1133002,3475448,PostTx,Female,White,Not Hispanic or Latino,Former,66.8579234972678,Trilaciclib,TNBC
-1133002,3574241,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,67.0245901639344,Trilaciclib,TNBC
 1137001,3338452,PreTx,Female,White,Not Hispanic or Latino,Never,86,Placebo,TNBC
 1137001,3547416,MidTx,Female,White,Not Hispanic or Latino,Never,86.4,Placebo,TNBC
 1137001,3475469,PostTx,Female,White,Not Hispanic or Latino,Never,86.6284153005465,Placebo,TNBC
-1137001,3574265,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,86.7950819672131,Placebo,TNBC
 1148001,3338484,PreTx,Female,White,Not Hispanic or Latino,Never,74,Trilaciclib,TNBC
 1148001,3475503,MidTx,Female,White,Not Hispanic or Latino,Never,74.4,Trilaciclib,TNBC
 1148001,3475480,PostTx,Female,White,Not Hispanic or Latino,Never,74.7431693989071,Trilaciclib,TNBC
-1148001,3475481,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,74.9098360655738,Trilaciclib,TNBC
 1148003,3338460,PreTx,Female,White,Not Hispanic or Latino,Never,55,Trilaciclib,TNBC
 1148003,3554591,MidTx,Female,White,Not Hispanic or Latino,Never,55.4,Trilaciclib,TNBC
 1148003,3598275,PostTx,Female,White,Not Hispanic or Latino,Never,55.9726775956284,Trilaciclib,TNBC
-1148003,3725324,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,56.1393442622951,Trilaciclib,TNBC
 1148005,3475484,PreTx,Female,White,Not Hispanic or Latino,Never,64,Placebo,TNBC
 1148005,3554560,MidTx,Female,White,Not Hispanic or Latino,Never,64.4,Placebo,TNBC
 1148005,3464988,PostTx,Female,White,Not Hispanic or Latino,Never,64.3989071038251,Placebo,TNBC
-1148005,3475474,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,64.5655737704918,Placebo,TNBC
 1156001,3410181,PreTx,Female,White,Not Hispanic or Latino,Never,51,Placebo,TNBC
 1156001,3410249,MidTx,Female,White,Not Hispanic or Latino,Never,51.4,Placebo,TNBC
 1156001,3410094,PostTx,Female,White,Not Hispanic or Latino,Never,51.5136612021858,Placebo,TNBC
-1156001,3410100,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,51.6803278688525,Placebo,TNBC
 1156002,3410186,PreTx,Female,White,Not Hispanic or Latino,Never,34,Trilaciclib,TNBC
 1156002,3475533,MidTx,Female,White,Not Hispanic or Latino,Never,34.4,Trilaciclib,TNBC
 1156003,3410244,PreTx,Female,White,Not Hispanic or Latino,Current,53,Trilaciclib,TNBC
 1156003,3410125,PostTx,Female,White,Not Hispanic or Latino,Current,53.2841530054645,Trilaciclib,TNBC
-1156003,3410079,PostPostMaintenance,Female,White,Not Hispanic or Latino,Current,53.4508196721312,Trilaciclib,TNBC
 1156004,3410160,PreTx,Female,White,Not Hispanic or Latino,Never,51,Trilaciclib,TNBC
 1156004,3410179,MidTx,Female,White,Not Hispanic or Latino,Never,51.4,Trilaciclib,TNBC
 1156004,3598259,PostTx,Female,White,Not Hispanic or Latino,Never,51.6284153005465,Trilaciclib,TNBC
-1156004,3666385,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,51.7950819672131,Trilaciclib,TNBC
 1156005,3410207,PreTx,Female,White,Not Hispanic or Latino,Never,58,Trilaciclib,TNBC
 1156005,3410234,MidTx,Female,White,Not Hispanic or Latino,Never,58.4,Trilaciclib,TNBC
 1156005,3410133,PostTx,Female,White,Not Hispanic or Latino,Never,58.4617486338798,Trilaciclib,TNBC
 1163005,3410261,PreTx,Female,White,Not Hispanic or Latino,Never,48,Trilaciclib,TNBC
 1163005,3410288,MidTx,Female,White,Not Hispanic or Latino,Never,48.4,Trilaciclib,TNBC
 1163005,3598267,PostTx,Female,White,Not Hispanic or Latino,Never,48.7431693989071,Trilaciclib,TNBC
-1163005,3574248,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,48.9098360655738,Trilaciclib,TNBC
 1163006,3410300,PreTx,Female,White,Not Hispanic or Latino,Never,52,Placebo,TNBC
 1163006,3410307,MidTx,Female,White,Not Hispanic or Latino,Never,52.4,Placebo,TNBC
 1163006,3783492,PostTx,Female,White,Not Hispanic or Latino,Never,53.0874316939891,Placebo,TNBC
-1163006,3783500,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,53.2540983606558,Placebo,TNBC
 1164001,3410258,PreTx,Female,White,Not Hispanic or Latino,Never,69,Trilaciclib,TNBC
 1164001,3410269,MidTx,Female,White,Not Hispanic or Latino,Never,69.4,Trilaciclib,TNBC
 1164001,3475471,PostTx,Female,White,Not Hispanic or Latino,Never,69.3989071038251,Trilaciclib,TNBC
-1164001,3574244,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,69.5655737704918,Trilaciclib,TNBC
 1165001,3338494,PreTx,Female,White,Not Hispanic or Latino,Former,67,Trilaciclib,TNBC
 1165001,3410285,MidTx,Female,White,Not Hispanic or Latino,Former,67.4,Trilaciclib,TNBC
 1165001,3465011,PostTx,Female,White,Not Hispanic or Latino,Former,67.8579234972678,Trilaciclib,TNBC
-1165001,3475409,PostPostMaintenance,Female,White,Not Hispanic or Latino,Former,68.0245901639344,Trilaciclib,TNBC
 1166001,3475467,PreTx,Female,White,Not Hispanic or Latino,Never,45,Trilaciclib,TNBC
 1166001,3564781,MidTx,Female,White,Not Hispanic or Latino,Never,45.4,Trilaciclib,TNBC
 1166001,3564835,PostTx,Female,White,Not Hispanic or Latino,Never,45.3989071038251,Trilaciclib,TNBC
-1166001,3564848,PostPostMaintenance,Female,White,Not Hispanic or Latino,Never,45.5655737704918,Trilaciclib,TNBC
 2817-3002,EP488885G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 2817-3002,EP943504G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,67,Trilaciclib,CRC
-2817-3001,EP707911G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
 2817-3001,EP488886G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
-2815-3001,EP019918H01,MidTx,Male,White,Not Hispanic or Latino,Unknown,73,Trilaciclib,CRC
 2815-3001,EP488942G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,73,Trilaciclib,CRC
 2811-3003,EP811905G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,62,Trilaciclib,CRC
 2811-3003,EP683035H01,PostTx,Male,White,Not Hispanic or Latino,Unknown,62,Trilaciclib,CRC
 2811-3002,EP458605G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
-2811-3002,EP811968G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
 2810-3003,EP021312H01,PostTx,Male,White,Not Hispanic or Latino,Unknown,44,Trilaciclib,CRC
 2810-3003,EP148000G06,PreTx,Male,White,Not Hispanic or Latino,Unknown,44,Trilaciclib,CRC
 2810-3002,EP147981G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,70,Placebo,CRC
-2810-3002,EP021305H01,MidTx,Male,White,Not Hispanic or Latino,Unknown,70,Placebo,CRC
-2810-3001,EP021307H01,MidTx,Male,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 2810-3001,EP147980G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 2807-3502,EP143720G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
-2807-3502,EP780337G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
 2807-3005,EP143722G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,67,Placebo,CRC
-2807-3005,EP242433G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,67,Placebo,CRC
 2807-3004,EP773793G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
-2807-3004,EP846551G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2807-3001,EP143721G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
-2807-3001,EP780340G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
 2805-3005,EP830306F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,32,Trilaciclib,CRC
 2805-3005,EP411629G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,32,Trilaciclib,CRC
 2805-3002,EP099172G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,61,Trilaciclib,CRC
@@ -303,30 +258,20 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2804-3504,EP041257G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,52,Placebo,CRC
 2804-3503,EP830831F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,65,Placebo,CRC
 2804-3503,EP041254G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,65,Placebo,CRC
-2804-3008,EP041249G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,62,Placebo,CRC
 2804-3008,EP384686G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,62,Placebo,CRC
-2803-3509,EP675581G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,66,Trilaciclib,CRC
 2803-3509,EP675566G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,66,Trilaciclib,CRC
 2803-3008,EP099260G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
-2803-3008,EP614028G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
 2803-3007,EP099258G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,57,Placebo,CRC
-2803-3007,EP614024G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,57,Placebo,CRC
-2803-3006,EP614027G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,59,Placebo,CRC
 2803-3006,EP897543F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,59,Placebo,CRC
 2803-3004,EP897541F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,45,Trilaciclib,CRC
 2803-3004,EP614031G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,45,Trilaciclib,CRC
 2802-3502,EP830713F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,30,Placebo,CRC
 2802-3502,EP099335G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,30,Placebo,CRC
 2802-3003,EP830711F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
-2802-3003,EP099331G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
-2802-3001,EP333137G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,71,Placebo,CRC
 2802-3001,EP830712F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,71,Placebo,CRC
 2801-3006,EP613526G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
-2801-3006,EP613552G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
 2801-3005,EP830395F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,47,Trilaciclib,CRC
-2801-3005,EP613549G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,47,Trilaciclib,CRC
 2801-3004,EP613528G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
-2801-3004,EP613548G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
 2801-3001,EP099420G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 2801-3001,EP830397F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 2710-3001,EP749591G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,53,Placebo,CRC
@@ -350,9 +295,7 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2705-3502,EP384470G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,52,Placebo,CRC
 2705-3502,EP384494G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,52,Placebo,CRC
 2705-3001,EP054932G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
-2705-3001,EP384489G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2703-3005,EP826420G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,74,Placebo,CRC
-2703-3005,EP826435G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,74,Placebo,CRC
 2703-3003,EP716793G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
 2703-3003,EP826436G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
 2703-3002,EP466493G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,46,Trilaciclib,CRC
@@ -363,12 +306,9 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2604-3011,EP348386H01,PostTx,Male,White,Not Hispanic or Latino,Unknown,51,Placebo,CRC
 2604-3010,EP625328G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2604-3010,EP348385H01,PostTx,Male,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
-2604-3009,EP803914G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,48,Trilaciclib,CRC
 2604-3009,EP625329G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,48,Trilaciclib,CRC
 2604-3008,EP478670G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
-2604-3008,EP803912G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
 2604-3006,EP478669G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,39,Trilaciclib,CRC
-2604-3006,EP625351G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,39,Trilaciclib,CRC
 2604-3005,EP478671G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 2604-3005,EP625356G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 2604-3004,EP252733G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,68,Trilaciclib,CRC
@@ -376,21 +316,16 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2604-3001,EP281191G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,45,Trilaciclib,CRC
 2604-3001,EP019712H01,PostTx,Female,White,Not Hispanic or Latino,Unknown,45,Trilaciclib,CRC
 2603-3004,EP239602G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
-2603-3004,EP239619G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
 2603-3002,EP001631G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
-2603-3002,EP239620G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2603-3001,EP239627G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,65,Trilaciclib,CRC
 2603-3001,EP001629G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,65,Trilaciclib,CRC
-2602-3007,EP624031G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
 2602-3007,EP119864G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
 2602-3004,EP624023G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,79,Placebo,CRC
 2602-3004,EP234373H01,PostTx,Male,White,Not Hispanic or Latino,Unknown,79,Placebo,CRC
 2602-3003,EP401979G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,63,Placebo,CRC
 2602-3003,EP401987G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,63,Placebo,CRC
-2602-3001,EP470920G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
 2602-3001,EP119862G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
 2506-3005,EP721982G01,PreTx,Female,Asian,Not Hispanic or Latino,Unknown,55,Placebo,CRC
-2506-3005,EP866811G01,MidTx,Female,Asian,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2506-3004,EP568310G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 2506-3004,EP866793G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 2506-3003,EP146938H01,PostTx,Male,White,Not Hispanic or Latino,Unknown,62,Placebo,CRC
@@ -406,11 +341,8 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2417-3001,EP177190G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,62,Placebo,CRC
 2417-3001,EP553511G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,62,Placebo,CRC
 2416-3004,EP242398G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,64,Trilaciclib,CRC
-2416-3004,EP242429G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,64,Trilaciclib,CRC
 2416-3003,EP242396G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,62,Trilaciclib,CRC
-2416-3003,EP242431G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,62,Trilaciclib,CRC
 2414-3003,EP985141F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,62,Trilaciclib,CRC
-2414-3003,EP684676G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,62,Trilaciclib,CRC
 2414-3002,EP985140F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2414-3002,EP684601G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2411-3002,EP830803F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,70,Placebo,CRC
@@ -424,16 +356,11 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2409-3002,EP102932G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 2409-3002,EP929748G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 2408-3004,EP020097G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,47,Trilaciclib,CRC
-2408-3004,EP914889G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,47,Trilaciclib,CRC
 2408-3003,EP020118G06,PreTx,Female,White,Not Hispanic or Latino,Unknown,51,Placebo,CRC
-2408-3003,EP651890G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,51,Placebo,CRC
 2408-3002,EP020096G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
-2408-3002,EP651891G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
-2408-3001,EP480262G02,MidTx,Male,White,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
 2408-3001,EP020095G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
 2407-3002,EP781907F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
 2407-3002,EP791455G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
-2407-3001,EP809653F06,MidTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2407-3001,EP809638F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2406-3002,EP660152G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,38,Placebo,CRC
 2406-3002,EP660166G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,38,Placebo,CRC
@@ -442,16 +369,11 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2405-3001,EP150524G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2405-3001,EP866575F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2404-3007,EP829975F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
-2404-3007,EP711537G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
 2404-3006,EP711529G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,46,Placebo,CRC
 2404-3006,EP716000G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,46,Placebo,CRC
 2404-3005,EP829973F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,75,Placebo,CRC
-2404-3005,EP893737G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,75,Placebo,CRC
-2403-3002,EP830743F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,67,Placebo,CRC
 2403-3002,EP830764F06,PreTx,Male,White,Not Hispanic or Latino,Unknown,67,Placebo,CRC
-2403-3001,EP830741F01,MidTx,Male,White,Unknown,Unknown,69,Trilaciclib,CRC
 2402-3004,EP664371G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,33,Trilaciclib,CRC
-2402-3004,EP664387G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,33,Trilaciclib,CRC
 2402-3003,EP452599G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,68,Placebo,CRC
 2402-3003,EP664389G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,68,Placebo,CRC
 2401-3004,EP816478G01,PreTx,Male,White,Hispanic or Latino,Unknown,72,Trilaciclib,CRC
@@ -461,19 +383,14 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2401-3002,EP829923F01,PreTx,Female,Unknown,Unknown,Unknown,44,Placebo,CRC
 2401-3002,EP816487G01,PostTx,Female,Unknown,Unknown,Unknown,44,Placebo,CRC
 2401-3001,EP829921F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,58,Trilaciclib,CRC
-2401-3001,EP271089G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,58,Trilaciclib,CRC
 2315-3001,EP680373G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2315-3001,EP736261G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2310-3002,EP975287G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
-2310-3002,EP975306G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
-2310-3001,EP975304G01,MidTx,Female,Asian,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2310-3001,EP151941G01,PreTx,Female,Asian,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2308-3003,EP874489G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2308-3003,EP939548G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2301-3004,EP791497G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,69,Trilaciclib,CRC
-2301-3004,EP791511G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,69,Trilaciclib,CRC
 2301-3003,EP791496G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,79,Trilaciclib,CRC
-2301-3003,EP791513G03,MidTx,Male,White,Not Hispanic or Latino,Unknown,79,Trilaciclib,CRC
 2301-3001,EP196621G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2301-3001,EP791519G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2043-3516,AP269310G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,45,Placebo,CRC
@@ -484,7 +401,6 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2043-3014,AP098393G03,PreTx,Male,Black,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2043-3013,AP269340G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,61,Placebo,CRC
 2043-3013,AP709940F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,61,Placebo,CRC
-2043-3011,AP709963F01,MidTx,Male,Black,Not Hispanic or Latino,Unknown,53,Placebo,CRC
 2043-3011,AP709941F01,PreTx,Male,Black,Not Hispanic or Latino,Unknown,53,Placebo,CRC
 2043-3008,AP516917F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,59,Placebo,CRC
 2043-3008,AP709942F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,59,Placebo,CRC
@@ -493,22 +409,18 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2043-3005,AP516916F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2043-3005,AP370772F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2043-3002,AP516893F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
-2043-3002,AP370779F01,MidTx,Female,White,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
 2034-3003,AP483444G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2034-3003,AP625402G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
-2034-3002,AP625400G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,41,Placebo,CRC
 2034-3002,AP511065F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,41,Placebo,CRC
 2033-3003,AP551089F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 2033-3003,AP830355F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 2033-3002,AP899937E01,PreTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
 2033-3002,AP830356F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
-2029-3006,AP566301G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,39,Trilaciclib,CRC
 2029-3006,AP813217F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,39,Trilaciclib,CRC
 2029-3004,AP073324G01,PostTx,Male,White,Hispanic or Latino,Unknown,36,Placebo,CRC
 2029-3004,AP073327G06,PreTx,Male,White,Hispanic or Latino,Unknown,36,Placebo,CRC
 2029-3002,AP644983F01,PreTx,Male,White,Hispanic or Latino,Unknown,38,Trilaciclib,CRC
 2029-3002,AP813233F01,PostTx,Male,White,Hispanic or Latino,Unknown,38,Trilaciclib,CRC
-2029-3001,AP073323G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,75,Trilaciclib,CRC
 2029-3001,AP813216F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,75,Trilaciclib,CRC
 2028-3507,AP075901G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
 2028-3507,AP075931G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,48,Placebo,CRC
@@ -517,20 +429,15 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2028-3008,AP130043G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,42,Placebo,CRC
 2028-3008,AP130055G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,42,Placebo,CRC
 2028-3005,AP973778F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,44,Placebo,CRC
-2028-3005,AP075928G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,44,Placebo,CRC
-2028-3004,AP973791F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,59,Trilaciclib,CRC
 2028-3004,AP626266F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,59,Trilaciclib,CRC
 2028-3002,AP075932G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,64,Trilaciclib,CRC
 2028-3002,AP626265F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,64,Trilaciclib,CRC
 2028-3001,AP196741F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,48,Trilaciclib,CRC
 2028-3001,AP973794F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,48,Trilaciclib,CRC
-2026-3003,AP542811G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,63,Trilaciclib,CRC
 2026-3003,AP182278F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,63,Trilaciclib,CRC
-2026-3002,AP427654F01,MidTx,Female,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2026-3002,AP264381F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2026-3001,AP111314F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,39,Placebo,CRC
 2026-3001,AP182286F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,39,Placebo,CRC
-2023-3001,AP522233F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,34,Trilaciclib,CRC
 2023-3001,AP111526F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,34,Trilaciclib,CRC
 2022-3033,AP103757G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,43,Placebo,CRC
 2022-3033,AP528934G02,PostTx,Male,White,Not Hispanic or Latino,Unknown,43,Placebo,CRC
@@ -540,7 +447,6 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2022-3029,AP657080G01,PostTx,Male,White,Unknown,Unknown,45,Trilaciclib,CRC
 2022-3027,AP476566F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 2022-3027,AP103754G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
-2022-3026,AP476560F01,MidTx,Female,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2022-3026,AP103756G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2022-3024,AP657079G01,PostTx,Male,Asian,Not Hispanic or Latino,Unknown,64,Trilaciclib,CRC
 2022-3024,AP165167G01,PreTx,Male,Asian,Not Hispanic or Latino,Unknown,64,Trilaciclib,CRC
@@ -548,34 +454,27 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2022-3022,AP244212F01,PostTx,Male,White,Unknown,Unknown,53,Placebo,CRC
 2022-3021,AP476538F01,PreTx,Male,Asian,Not Hispanic or Latino,Unknown,69,Trilaciclib,CRC
 2022-3021,AP528938G01,PostTx,Male,Asian,Not Hispanic or Latino,Unknown,69,Trilaciclib,CRC
-2022-3020,AP165192G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 2022-3020,AP681170F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 2022-3019,AP103790G01,PostTx,Female,Black,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2022-3019,AP242304F01,PreTx,Female,Black,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2022-3017,AP681169F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,59,Placebo,CRC
-2022-3017,AP476565F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,59,Placebo,CRC
 2022-3016,AP103793G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
 2022-3016,AP681168F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
-2022-3015,AP242347F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,58,Trilaciclib,CRC
 2022-3015,AP681171F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,58,Trilaciclib,CRC
 2022-3014,AP103792G01,PostTx,Female,Black,Not Hispanic or Latino,Unknown,40,Trilaciclib,CRC
 2022-3014,AP476536F01,PreTx,Female,Black,Not Hispanic or Latino,Unknown,40,Trilaciclib,CRC
 2022-3013,AP234237F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2022-3013,AP242354F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,54,Placebo,CRC
 2022-3010,AP476537F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,70,Trilaciclib,CRC
-2022-3010,AP242350F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,70,Trilaciclib,CRC
 2022-3009,AP234236F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,49,Placebo,CRC
-2022-3009,AP681202F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,49,Placebo,CRC
 2022-3007,AP244214F01,PostTx,Female,Asian,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2022-3007,AP242306F01,PreTx,Female,Asian,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 2022-3006,AP244175F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,70,Placebo,CRC
 2022-3006,AP681205F01,PostTx,Female,White,Not Hispanic or Latino,Unknown,70,Placebo,CRC
-2022-3002,AP242346F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
 2022-3002,AP025319F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
 2021-3002,AP377383G01,PostTx,Male,Black,Not Hispanic or Latino,Unknown,29,Trilaciclib,CRC
 2021-3002,AP957093F01,PreTx,Male,Black,Not Hispanic or Latino,Unknown,29,Trilaciclib,CRC
 2014-3009,AP664570F01,PreTx,Male,Unknown,Unknown,Unknown,36,Placebo,CRC
-2014-3009,AP451351G01,MidTx,Male,Unknown,Unknown,Unknown,36,Placebo,CRC
 2014-3008,AP846558F01,PostTx,Female,Unknown,Unknown,Unknown,43,Trilaciclib,CRC
 2014-3008,AP857333F01,PreTx,Female,Unknown,Unknown,Unknown,43,Trilaciclib,CRC
 2014-3007,AP664571F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,44,Trilaciclib,CRC
@@ -584,19 +483,15 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 2014-3006,AP809122F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,36,Placebo,CRC
 2014-3004,AP664587F01,PostTx,Female,Unknown,Unknown,Unknown,53,Trilaciclib,CRC
 2014-3004,AP594377F01,PreTx,Female,Unknown,Unknown,Unknown,53,Trilaciclib,CRC
-2013-3001,AP952696F01,MidTx,Female,Black,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2013-3001,AP167642F01,PreTx,Female,Black,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 2011-3001,AP286946F01,PreTx,Male,White,Hispanic or Latino,Unknown,51,Trilaciclib,CRC
-2011-3001,AP443053F01,MidTx,Male,White,Hispanic or Latino,Unknown,51,Trilaciclib,CRC
 2009-3006,AP609402F01,PreTx,Male,Black,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
-2009-3006,AP080821G01,MidTx,Male,Black,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
 2009-3005,AP025400F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,40,Placebo,CRC
 2009-3005,AP609435F01,PostTx,Female,White,Not Hispanic or Latino,Unknown,40,Placebo,CRC
 2009-3004,AP609404F01,PreTx,Female,Asian,Not Hispanic or Latino,Unknown,43,Placebo,CRC
 2009-3004,AP609434F01,PostTx,Female,Asian,Not Hispanic or Latino,Unknown,43,Placebo,CRC
 2009-3003,AP609403F01,PreTx,Female,Black,Not Hispanic or Latino,Unknown,67,Placebo,CRC
 2009-3003,AP609437F01,PostTx,Female,Black,Not Hispanic or Latino,Unknown,67,Placebo,CRC
-2004-3006,AP316802G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,50,Trilaciclib,CRC
 2004-3006,AP124505G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,50,Trilaciclib,CRC
 2004-3005,AP124507G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,52,Placebo,CRC
 2004-3005,AP124529G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,52,Placebo,CRC
@@ -613,18 +508,13 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1251-3002,EP099376G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 1251-3002,EP830337F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,49,Trilaciclib,CRC
 1249-3003,EP143924G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
-1249-3003,EP806619G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,66,Placebo,CRC
 1249-3001,EP143925G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
-1249-3001,EP806617G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,60,Trilaciclib,CRC
 1246-3004,EP097757G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,63,Trilaciclib,CRC
-1246-3004,EP097792G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,63,Trilaciclib,CRC
 1246-3003,EP257589G01,PreTx,Male,White,Not Hispanic or Latino,Unknown,45,Placebo,CRC
-1246-3003,EP257622G01,MidTx,Male,White,Not Hispanic or Latino,Unknown,45,Placebo,CRC
 1246-3002,EP897415F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
 1246-3002,EP097798G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,64,Placebo,CRC
 1246-3001,EP257634G01,PostTx,Female,White,Not Hispanic or Latino,Unknown,50,Trilaciclib,CRC
 1246-3001,EP897416F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,50,Trilaciclib,CRC
-1216-3502,AP377194F01,MidTx,Male,Unknown,Not Hispanic or Latino,Unknown,65,Trilaciclib,CRC
 1216-3502,AP377168F01,PreTx,Male,Unknown,Not Hispanic or Latino,Unknown,65,Trilaciclib,CRC
 1216-3007,AP377167F01,PreTx,Male,Unknown,Hispanic or Latino,Unknown,71,Placebo,CRC
 1216-3007,AP377200F01,PostTx,Male,Unknown,Hispanic or Latino,Unknown,71,Placebo,CRC
@@ -636,17 +526,12 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1215-3012,AP221410G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,56,Trilaciclib,CRC
 1215-3008,AP173439F02,PostTx,Male,White,Not Hispanic or Latino,Unknown,57,Placebo,CRC
 1215-3008,AP173407F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,57,Placebo,CRC
-1215-3007,AP813355F01,MidTx,Female,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
 1215-3007,AP173408F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
 1215-3005,AP173406F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
-1215-3005,AP173433F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,50,Placebo,CRC
 1215-3003,AP173405F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,74,Trilaciclib,CRC
-1215-3003,AP355766F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,74,Trilaciclib,CRC
 1209-3009,AP187890G01,PreTx,Female,Unknown,Hispanic or Latino,Unknown,66,Trilaciclib,CRC
 1209-3009,AP187913G01,PostTx,Female,Unknown,Hispanic or Latino,Unknown,66,Trilaciclib,CRC
 1209-3007,AP187888G01,PreTx,Female,Black,Not Hispanic or Latino,Unknown,65,Placebo,CRC
-1209-3007,AP187910G01,MidTx,Female,Black,Not Hispanic or Latino,Unknown,65,Placebo,CRC
-1209-3005,AP468925F01,MidTx,Male,Asian,Hispanic or Latino,Unknown,40,Placebo,CRC
 1209-3005,AP468911F01,PreTx,Male,Asian,Hispanic or Latino,Unknown,40,Placebo,CRC
 1209-3003,AP170870F01,PreTx,Male,White,Hispanic or Latino,Unknown,46,Trilaciclib,CRC
 1209-3003,AP243791F01,PostTx,Male,White,Hispanic or Latino,Unknown,46,Trilaciclib,CRC
@@ -659,7 +544,6 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1125-3009,AP344805F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,49,Placebo,CRC
 1125-3009,AP146929F01,PostTx,Female,White,Not Hispanic or Latino,Unknown,49,Placebo,CRC
 1125-3008,AP146886F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,65,Placebo,CRC
-1125-3008,AP235609F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,65,Placebo,CRC
 1125-3007,AP146928F01,PostTx,Male,Asian,Hispanic or Latino,Unknown,46,Placebo,CRC
 1125-3007,AP344803F01,PreTx,Male,Asian,Hispanic or Latino,Unknown,46,Placebo,CRC
 1125-3005,AP146930F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,58,Placebo,CRC
@@ -668,29 +552,21 @@ DeID,SampleDeID,whichdraw,Sex,Race,Ethnicity,SmokingStatus,Age,Trilaciclib,Cohor
 1125-3004,AP235614F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,68,Trilaciclib,CRC
 1125-3003,AP344830F01,PostTx,Male,White,Not Hispanic or Latino,Unknown,74,Trilaciclib,CRC
 1125-3003,AP146888F02,PreTx,Male,White,Not Hispanic or Latino,Unknown,74,Trilaciclib,CRC
-1125-3001,AP146924F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,66,Trilaciclib,CRC
 1125-3001,AP963031E01,PreTx,Male,White,Not Hispanic or Latino,Unknown,66,Trilaciclib,CRC
 1124-3005,AP506748F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
-1124-3005,AP279312F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,72,Placebo,CRC
-1124-3004,AP775956F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,73,Trilaciclib,CRC
 1124-3004,AP052456F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,73,Trilaciclib,CRC
 1124-3003,AP052503F01,PostTx,Male,Asian,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
 1124-3003,AP052455F02,PreTx,Male,Asian,Not Hispanic or Latino,Unknown,55,Trilaciclib,CRC
 1124-3002,AP052459F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
-1124-3002,AP052500F01,MidTx,Male,White,Not Hispanic or Latino,Unknown,56,Placebo,CRC
 1124-3001,AP963039E04,PreTx,Male,Unknown,Hispanic or Latino,Unknown,55,Placebo,CRC
 1124-3001,AP052506F02,PostTx,Male,Unknown,Hispanic or Latino,Unknown,55,Placebo,CRC
 1077-3001,EP054902G01,PreTx,Female,White,Not Hispanic or Latino,Unknown,44,Trilaciclib,CRC
-1077-3001,EP411628G01,MidTx,Female,White,Not Hispanic or Latino,Unknown,44,Trilaciclib,CRC
 1031-3006,AP246979G01,PostTx,Male,White,Not Hispanic or Latino,Unknown,55,Placebo,CRC
 1031-3006,AP792303F01,PreTx,Male,White,Not Hispanic or Latino,Unknown,55,Placebo,CRC
-1031-3004,AP427737F01,MidTx,Female,White,Hispanic or Latino,Unknown,48,Placebo,CRC
 1031-3004,AP435734F01,PreTx,Female,White,Hispanic or Latino,Unknown,48,Placebo,CRC
 1012-3009,AP943940F01,PreTx,Male,Black,Not Hispanic or Latino,Unknown,70,Placebo,CRC
 1012-3009,AP517226G01,PostTx,Male,Black,Not Hispanic or Latino,Unknown,70,Placebo,CRC
-1012-3006,AP943977F01,MidTx,Female,Black,Not Hispanic or Latino,Unknown,29,Trilaciclib,CRC
 1012-3006,AP601562F01,PreTx,Female,Black,Not Hispanic or Latino,Unknown,29,Trilaciclib,CRC
-1012-3003,AP943979F01,MidTx,Male,White,Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 1012-3003,AP601563F01,PreTx,Male,White,Hispanic or Latino,Unknown,67,Trilaciclib,CRC
 1012-3001,AP193284F01,PreTx,Female,White,Not Hispanic or Latino,Unknown,30,Placebo,CRC
 1012-3001,AP601581F01,PostTx,Female,White,Not Hispanic or Latino,Unknown,30,Placebo,CRC

@@ -74,8 +74,7 @@ g1_tp <- rbind(
     crc_tp %>% mutate(Cohort = "CRC")
 )
 # Demographics Dataframe
-g1_demo <- fread(paste0(data_file_path, "g1_demo.csv"))
-g1_extra_demo <- fread(paste0(data_file_path, "g1_sra_extra_columns.csv"))
+g1_demo <- fread(paste0(data_file_path, "g1_demo.test.csv"))
 
 # Blood Counts Lab Results
 g1_lab <- fread(paste0(data_file_path, "g1_labresults.csv"))
@@ -2869,67 +2868,6 @@ g1_tp %>%
         plot.margin = margin(1, 1, 1, 1, "cm")
     )
 
-# Generic Spider Plot
-g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    filter(!is.na(change_in_VAF), Gene_Class == "DDR" | Gene_Class == "DTA") %>%
-    ggplot(
-        aes(
-            x = change_in_days,
-            y = change_in_VAF,
-            fill = Trilaciclib
-        )
-    ) +
-    geom_segment(
-        aes(
-            x = change_in_days,
-            y = change_in_VAF,
-            xend = 0,
-            yend = 0,
-            color = Trilaciclib
-        ),
-        size = 0.1,
-        alpha = 0.5
-    ) +
-    geom_point(
-        aes(
-            x = change_in_days,
-            y = change_in_VAF,
-            color = Trilaciclib
-        ),
-        alpha = 0.5
-    ) +
-    labs(
-        x = "",
-        y = "Change in VAF",
-        fill = "Trilaciclib",
-    ) +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    scale_color_nejm() +
-    scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.001),
-        limits = \(x) {
-            c(-max(abs(x)), max(abs(x)))
-        }
-    ) +
-    scale_x_sqrt() +
-    facet_wrap(~Gene_Class) +
-    theme(
-        strip.text = element_blank(),
-        plot.title = element_text(hjust = 0, vjust = 2, size = 20),
-        plot.margin = margin(1, 1, 1, 1, "cm"),
-        panel.spacing = unit(2, "lines")
-    )
-
 # Spider Plot by Gene with Starting VAF
 g1_tp %>%
     filter(
@@ -3247,41 +3185,6 @@ data_to_plot %>%
     do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "CRC"), 8, 3.8, 4.2, model_change_in_VAF_per_month$p.value[3], model_change_in_VAF_per_month$p.stars[3], show_values = TRUE))
 
 data_to_plot %>%
-    filter(Cohort == "CRC") %>%
-    ungroup() %>%
-    group_by(deid_key, Gene, Trilaciclib) %>%
-    dplyr::select(deid_key, Gene, Trilaciclib, Cohort, change_in_VAF, change_in_VAF_per_month) %>%
-    pivot_longer(
-        cols = c(change_in_VAF, change_in_VAF_per_month),
-        names_to = "Change_in_VAF",
-        values_to = "VAF"
-    ) %>%
-    ggplot(
-        aes(
-            x = Cohort,
-            y = VAF,
-            color = Trilaciclib
-        )
-    ) +
-    geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.5) +
-    geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.1, size = 1, outlier.shape = NA) +
-    geom_point(position = position_jitterdodge(jitter.width=1)) +
-    facet_wrap(~Change_in_VAF) +
-    scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.0001),
-        limits = \(x) {c(-max(abs(x)), max(abs(x)))},
-        #breaks = scales::extended_breaks(n = 10),
-        breaks = c(-0.1, -0.05, -0.01, -0.005, -0.001, 0, 0.001, 0.005, 0.01, 0.05, 0.1),
-        labels = scales::percent_format(accuracy = 0.1)
-    ) +
-    labs(
-        y = "Change in VAF"
-    ) +
-    panel_theme_basic +
-    scale_fill_manual(values = treatment_colors) +
-    scale_color_manual(values = treatment_colors)
-
-data_to_plot %>%
     ungroup() %>%
     group_by(Trilaciclib) %>%
     summarise(
@@ -3308,17 +3211,6 @@ g1_tp %>%
     scale_fill_nejm() +
     theme(
         plot.margin = margin(1, 1, 1, 1, "cm")
-    )
-
-g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
     )
 
 supp_table_3 <- g1_tp %>%

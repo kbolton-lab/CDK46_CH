@@ -482,17 +482,157 @@ df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
         stringsAsFactors = FALSE
     )
 fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.names = FALSE)
-clinical_data <- g1_df %>%
-    mutate(
-        Tumor_Sample_Barcode = DeID,
-        Cohort = ifelse(Cohort == "Untreated", "Healthy Control", "SCLC"),
-        Cohort = factor(Cohort, levels = c("SCLC", "Healthy Control")),
-        Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", Trilaciclib),
-        Treatment = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib")),
-        stringAsFactors = FALSE
+
+library(ComplexHeatmap)
+library(ggsci)
+col <- pal_nejm("default")(6)
+names(col) <- c("Multi mutation", "Frameshift", "Missense", "Nonsense", "Splicing", "Other")
+
+# Function to define colors for alteration cells
+alter_fun_vec <- function(x, y, w, h, v) {
+    tmp <- pal_nejm("default")(6)
+    names(tmp) <- c("Multi mutation", "Frameshift", "Missense", "Nonsense", "Splicing", "Other")
+    colNames <- names(v)[!is.na(names(v))]
+    v <- matrix(v, ncol = length(colNames))
+    color <- apply(v, 1, function(x) {
+        if (sum(x) == 0) {
+            "#FFFFFF"
+        } else {
+            tmp[colNames[x]][1]
+        }
+    })
+    grid.rect(x, y, w * 1.1, h,
+        gp = gpar(fill = color, col = NA)
     )
-maf_to_plot <- maftools::read.maf(maf = df_to_maf, vc_nonSyn = names(table(df_to_maf$VariantClass)), clinicalData = clinical_data)
-maftools::oncoplot(maf = maf_to_plot, genes = gene_list, clinicalFeatures = c("Cohort", "Treatment"))
+}
+
+# Preparing Data for OncoPrint
+toPlot <- df_to_maf %>%
+    dplyr::select(DeID, Gene, VariantClass, Cohort, Trilaciclib) %>%
+    dplyr::filter(Gene != "") %>%
+    dplyr::filter(Cohort %in% c("Untreated", "SCLC")) %>%
+    group_by(DeID, Gene) %>%
+    mutate(VariantClass = ifelse(n() > 1, "multi_mutation", VariantClass)) %>%
+    ungroup() %>%
+    distinct() %>%
+    mutate(
+        Cohort = case_match(
+            Cohort,
+            "Untreated" ~ "Healthy Control",
+            "SCLC" ~ "SCLC Pre-Treatment"
+        ),
+        VariantClass = case_match(
+            VariantClass,
+            "multi_mutation" ~ "Multi mutation",
+            "frameshift_variant" ~ "Frameshift",
+            c("missense_variant", "inframe_deletion", "inframe_insertion") ~ "Missense",
+            "splice_region_variant" ~ "Splicing",
+            c("start_lost", "stop_gained") ~ "Nonsense",
+            .default = "Other"
+        )
+    )
+
+# Creating Matrix for OncoPrint
+mat <- toPlot %>%
+    dplyr::select(DeID, Gene, VariantClass) %>%
+    pivot_wider(names_from = DeID, values_from = VariantClass, values_fill = "") %>%
+    column_to_rownames("Gene")
+# Ordering rows by number of mutations per gene
+rowOrder <- toPlot %>%
+    group_by(Gene) %>%
+    summarise(n = n()) %>%
+    arrange(desc(n)) %>%
+    pull(Gene) %>%
+    unique()
+# Ordering columns by Cohort, Gene, VariantClass, and number of mutations
+colOrder <- toPlot %>%
+    group_by(DeID) %>%
+    mutate(n = sum(VariantClass != "")) %>%
+    ungroup() %>%
+    arrange(
+        factor(Cohort, levels = c("Healthy Control", "SCLC Pre-Treatment")),
+        factor(Gene, levels = rowOrder),
+        factor(VariantClass, levels = c("Multi mutation", "Frameshift", "Missense", "Nonsense", "Splicing", "Other")),
+        desc(n)
+    ) %>%
+    pull(DeID) %>%
+    unique()
+# Reordering matrix
+mat <- mat[rowOrder, colOrder]
+# Creating Column Information for Annotations
+colInfor <- toPlot %>%
+    dplyr::select(DeID, Cohort, Trilaciclib) %>%
+    distinct() %>%
+    arrange(factor(DeID, levels = colOrder))
+
+p <- oncoPrint(mat,
+    alter_fun = alter_fun_vec,
+    alter_fun_is_vectorized = TRUE,
+    col = col,
+    row_order = rownames(mat),
+    column_order = colnames(mat),
+    show_pct = TRUE,
+    pct_side = "right",
+    row_names_side = "left",
+    top_annotation = HeatmapAnnotation(
+        annotation_name_gp = gpar(fontsize = 10),
+        annotation_name_side = "left",
+        annotation_name_rot = 90,
+        annotation_name_offset = unit(15, "points"),
+        "# of Muts" = anno_oncoprint_barplot() %>%
+            {
+                x <- .
+                x@show_name <- TRUE
+                x
+            }
+    ),
+    right_annotation = rowAnnotation(
+        annotation_name_gp = gpar(fontsize = 10),
+        annotation_name_side = "top",
+        annotation_name_offset = unit(15, "points"),
+        "# of Samples" = anno_oncoprint_barplot() %>%
+            {
+                x <- .
+                x@show_name <- TRUE
+                x
+            }
+    ),
+    bottom_annotation = HeatmapAnnotation(
+        Cohort = colInfor$Cohort,
+        Treatment = colInfor$Trilaciclib,
+        col = list(
+            Cohort = c(`Healthy Control` = nejmPal[1], `SCLC Pre-Treatment` = nejmPal[2]),
+            Treatment = c(Untreated = nejmPal[1], Trilaciclib = nejmPal[2], Placebo = nejmPal[3])
+        ),
+        annotation_legend_param = list(
+            Cohort = list(
+                nrow = 1,
+                at = c("Healthy Control", "SCLC Pre-Treatment")
+            ),
+            Treatment = list(
+                nrow = 2,
+                at = c("Untreated", "Trilaciclib", "Placebo"),
+                by_row = TRUE
+            )
+        )
+    ),
+    heatmap_legend_param = list(
+        title = "Alteration",
+        nrow = 2,
+        by_row = TRUE,
+        at = c("Multi mutation", "Frameshift", "Missense", "Nonsense", "Splicing", "Other")
+    )
+)
+
+png(paste0(figures_save_path, "Figure1C.png"), width = 8, height = 5, units = "in", res = 300)
+draw(
+    p,
+    heatmap_legend_side = "bottom",
+    annotation_legend_side = "bottom",
+    merge_legend = TRUE,
+    padding = unit(c(5.5, 5.5, 5.5, 10), "points")
+)
+dev.off()
 ```
 
 # Figure 1D - VAF Bin Mutation Bar Plot

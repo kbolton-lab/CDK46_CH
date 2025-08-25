@@ -3,7 +3,7 @@
 library(data.table)
 library(tidyverse)
 
-raw_data_file_path <- "/Users/irenaeuschan/Documents/Irenaeus/CDK46_CH/data/RawData/"
+raw_data_file_path <- "/Users/chani/Library/CloudStorage/Box-Box/Irenaeus/CDK46_CH/data/RawData/"
 
 sclc_df <- fread(paste0(raw_data_file_path, "g1_sclc_df.csv"))                       # Small Cell Lung Cancer
 tnbc_df <- fread(paste0(raw_data_file_path, "g1_tnbc_df.csv"))                       # Triple Negative Breast Cancer
@@ -41,7 +41,7 @@ sclc_df %>%
     mutate(
         key = gsub(" |>", ":", key),
         sample_key = paste0(SampleDeID, "_", key)
-    ) %>% fwrite("~/Documents/irenaeus/CDK46_CH/data/g1_sclc_df.minimum.csv")
+    ) #%>% fwrite("~/Documents/irenaeus/CDK46_CH/data/g1_sclc_df.minimum.csv")
 
 untreated_df %>%
     mutate(

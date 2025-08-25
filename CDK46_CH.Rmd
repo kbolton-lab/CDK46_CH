@@ -36,9 +36,14 @@ library(geepack)
 library(sjPlot)
 library(readxl)
 library(maftools)
+library(purrr)
 
-source("CDK46_CH/utils/toolbox.R")
-source("CDK46_CH/utils/timepoints_function.R")
+library(conflicted)
+conflicts_prefer(dplyr::select)
+conflicts_prefer(dplyr::filter)
+
+#source("CDK46_CH/utils/toolbox.R")
+#source("CDK46_CH/utils/timepoints_function.R")
 source("CDK46_CH/utils/custom_lollipop.R")
 
 data_file_path <- "CDK46_CH/data/"
@@ -47,15 +52,15 @@ figures_save_path <- "CDK46_CH/figures/"
 
 ```{r load_data, include=TRUE, message = FALSE, warning = FALSE}
 # CH Calls
-sclc_df <- fread(paste0(data_file_path, "g1_sclc_df.minimum.csv"))                       # Small Cell Lung Cancer
-tnbc_df <- fread(paste0(data_file_path, "g1_tnbc_df.minimum.csv"))                       # Triple Negative Breast Cancer
-crc_df <- fread(paste0(data_file_path, "g1_crc_df.minimum.csv"))                         # Colorectal Cancer
+sclc_df <- fread(paste0(data_file_path, "sclc_df.minimum.csv"))                       # Small Cell Lung Cancer
+tnbc_df <- fread(paste0(data_file_path, "tnbc_df.minimum.csv"))                       # Triple Negative Breast Cancer
+crc_df <- fread(paste0(data_file_path, "crc_df.minimum.csv"))                         # Colorectal Cancer
 untreated_df <- fread(paste0(data_file_path, "untreated_df.minimum.csv"))                # Untreated
 
 g1_df <- rbind(
     sclc_df %>% mutate(Cohort = "SCLC") %>% mutate(DeID = as.character(DeID)), 
     tnbc_df %>% mutate(Cohort = "TNBC") %>% mutate(DeID = as.character(DeID), SampleDeID = as.character(SampleDeID)), 
-    crc_df %>% mutate(Cohort = "CRC"), 
+    crc_df %>% mutate(Cohort = "CRC"),
     untreated_df %>% mutate(Cohort = "Untreated") %>% mutate(SampleDeID = as.character(SampleDeID))
 )
 
@@ -67,17 +72,41 @@ crc_schematic <- paste0(data_file_path, "G1_CRC.png")
 sclc_tp <- fread(paste0(data_file_path, "sclc_timepoints.minimum.csv"))                  # Small Cell Lung Cancer
 tnbc_tp <- fread(paste0(data_file_path, "tnbc_timepoints.minimum.csv"))                  # Triple Negative Breast Cancer
 crc_tp <- fread(paste0(data_file_path, "crc_timepoints.minimum.csv"))                    # Colorectal Cancer
+untreated_tp <- fread(paste0(data_file_path, "untreated_timepoints.minimum.csv"))          # Untreated
 
 g1_tp <- rbind(
     sclc_tp %>% mutate(Cohort = if_else(Trilaciclib == "Untreated", "Untreated", "SCLC")), 
     tnbc_tp %>% mutate(Cohort = "TNBC"), 
-    crc_tp %>% mutate(Cohort = "CRC")
+    crc_tp %>% mutate(Cohort = "CRC"),
+    untreated_tp %>% mutate(Cohort = "Untreated")
 )
 # Demographics Dataframe
-g1_demo <- fread(paste0(data_file_path, "g1_demo.test.csv"))
+g1_demo <- fread(paste0(data_file_path, "g1_demo.csv"))
 
 # Blood Counts Lab Results
 g1_lab <- fread(paste0(data_file_path, "g1_labresults.csv"))
+```
+
+# Check that all Timepoints Variants are IN the Dataframe and vice versa
+```{r check_timepoints, include=TRUE, message = FALSE, warning = FALSE}
+setdiff(
+    g1_tp %>%
+        select(DeID, key),
+    g1_df %>%
+        filter(key != "") %>%
+        select(DeID, key) %>%
+        distinct()
+)
+
+setdiff(
+    g1_df %>%
+        filter(key != "") %>%
+        select(DeID, key) %>%
+        distinct(),
+    g1_tp %>%
+        select(DeID, key) %>%
+        distinct()
+)
 ```
 
 # Table 1
@@ -96,8 +125,6 @@ for_table <- g1_demo %>%
                         filter(n > 1) %>%
                         pull(DeID))
     )
-
-table1(~ Age + Sex + Race + Ethnicity + SmokingStatus | Cohort + Trilaciclib, data = for_table %>% filter(whichdraw == "PreTx"))
 ```
 
 # Plotting Variables
@@ -134,15 +161,15 @@ default_sig <- function(y_position, xmin, xmax, model_pvalue, model_stars, tip_l
   }
 }
 
-default_sig_data <- function(data, y_position, xmin, xmax, model_pvalue, model_stars, tip_length = 0.03, size = 1, textsize = 10, color = "black", fill = "black", show_values = TRUE, hide_ns = TRUE) {
+default_sig_data <- function(data, y_position, xmin, xmax, model_pvalue, model_stars, tip_length = 0.03, size = 1, textsize = 10, color = "black", show_values = TRUE, hide_ns = TRUE) {
   if (show_values) {
-    list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = paste0("p = ", format(model_pvalue, digits = 5), model_stars), tip_length = tip_length, size = size, textsize = textsize, color = color, fill = fill)
+    list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = paste0("p = ", format(model_pvalue, digits = 5), model_stars), tip_length = tip_length, size = size, textsize = textsize, color = color)
   } else {
     if (model_stars == "") { model_stars <- "ns"}
     if (hide_ns & model_stars == "ns") { 
-      list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = "", tip_length = 0, size = 0, textsize = 0, color = "black", fill = "black")
+      list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = "", tip_length = 0, size = 0, textsize = 0, color = "black")
     } else {
-      list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = model_stars, tip_length = tip_length, size = size, textsize = textsize, color = color, fill = fill)
+      list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = model_stars, tip_length = tip_length, size = size, textsize = textsize, color = color)
     }
   }
 }
@@ -168,6 +195,37 @@ signif.num <- function(x, ns = FALSE) {
 }
 ```
 
+# GLM Function for Growth Rate
+```{r glm_growth_rate, include=TRUE, message = FALSE, warning = FALSE}
+model_growth_rate_class_fun <- function(df_for_glm) {
+  purrr::cross_df(list(
+    Gene_Class = c("DTA", "DDR"),
+    comparison = c("all", "no_untreated")
+  )) %>%
+    pmap_dfr(function(Gene_Class, comparison) {
+        print(paste0("Fitting for ", Gene_Class, " with comparison ", comparison))
+      df <- df_for_glm %>%
+        filter(Gene_Class == !!Gene_Class)
+      if (comparison == "no_untreated") {
+        df <- df %>%
+          filter(Trilaciclib != "Untreated") %>%
+          mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo")))
+      }
+      fit <- glm(formula = growth_rate ~ Trilaciclib + Age, data = df)
+      sjPlot::get_model_data(fit, type = "est") %>%
+        mutate(
+          term = case_when(
+            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
+            term == "TrilaciclibPlacebo" ~ ifelse(comparison == "all", "UntreatedVSPlacebo", "TrilaciclibVSPlacebo"),
+            TRUE ~ term
+          ),
+          Gene_Class = Gene_Class
+        )
+    }) %>%
+    filter(term %in% c("UntreatedVSTrilaciclib", "UntreatedVSPlacebo", "TrilaciclibVSPlacebo"))
+}
+```
+
 # Default Variables
 ```{r default_variables, include=TRUE, message = FALSE, warning = FALSE}
 gene_list = c("DNMT3A", "TET2", "ASXL1", "TP53", "PPM1D", "CHEK2", "JAK2", "SRSF2", "SF3B1")
@@ -177,6 +235,7 @@ treatment_colors = c('Untreated' = '#BC3C29FF', 'Placebo' = '#E18727FF', 'Trilac
 
 # Basic Processing - Merging ALL Information Together
 ```{r processing, include=TRUE, message = FALSE, warning = FALSE}
+# Adding Gene and Variant Information to Timepoints
 g1_tp <- g1_tp %>%
     left_join(
         g1_df %>%
@@ -195,6 +254,7 @@ g1_tp <- g1_tp %>%
         by = c("key", "Gene")
     )
 
+# Adding Demographics Information to Timepoints ie. Age, Sex, Race, etc for Statistics
 g1_tp <- g1_tp %>%
     left_join(
         g1_demo %>% 
@@ -202,6 +262,7 @@ g1_tp <- g1_tp %>%
             dplyr::select(DeID, Age, Sex, Race, Ethnicity, SmokingStatus)
     )
 
+# Calculating change in blood counts
 g1_lab_changes <- g1_lab %>% 
             pivot_wider(
                 id_cols = c(Cohort, subject),
@@ -255,6 +316,7 @@ g1_lab_changes <- g1_lab %>%
                 change_in_prop_GRAN = rowSums(across(c(change_in_prop_BASO, change_in_prop_EOS, change_in_prop_NEUT)), na.rm = TRUE)
             )    
 
+# Adding Blood Count Information from Lab Results to Timepoints
 g1_tp <- g1_tp %>%
     left_join(
         g1_lab_changes %>%
@@ -264,7 +326,7 @@ g1_tp <- g1_tp %>%
         by = c("DeID"="subject", "Cohort")
     )
 
-# Simplifying Race, Ethnicity Variables
+# Simplifying Race, Ethnicity Variables due to low sample sizes
 g1_tp <- g1_tp %>%
     mutate(
         Race = case_when(
@@ -282,8 +344,12 @@ g1_tp <- g1_tp %>%
         )
     )
 
-# Small change to remove Missense Variants for PPM1D from the raw data
-g1_df <- g1_df %>% filter(!(Gene == "PPM1D" & VariantClass == "missense_variant"))
+# Removing Samples with Low Sequencing Depths (May give inaccurate results)
+low_depth_deid <- c("1163006", "1148005", "1114002", "1131013", "1117006", "2022-3022", "2028-3011", "2009-3003", "2810-3003", "2405-3002", "2703-3002")
+g1_df <- g1_df %>%
+    filter(!(DeID %in% low_depth_deid))
+g1_tp <- g1_tp %>%
+    filter(!(DeID %in% low_depth_deid))
 
 # Even though Timepoints already has Growth Rate, we will calculate it again to ensure consistency
 g1_tp %>%
@@ -299,10 +365,9 @@ g1_tp %>%
     # We will check if the growth rate differs by more than 1e-8
     filter(abs(growth_rate - growth_rate_check) > 1e-8) %>%
     select(deid_key, Cohort, growth_rate, growth_rate_check)
-# There are only 2 values which when rounded to the nearest 0.001 are consistent
 ```
 
-# Reference Variables
+# Reference Variables for Statistics
 ```{r reference_variables, include=TRUE, message = FALSE, warning = FALSE}
 g1_tp$Trilaciclib <- factor(g1_tp$Trilaciclib, levels = c("Untreated", "Trilaciclib", "Placebo"))
 g1_tp$Gene_Class <- factor(g1_tp$Gene_Class, levels = c("DTA", "DDR"))
@@ -343,39 +408,6 @@ g1_mut_table %>%
     ) %>%
     group_by(Trilaciclib) %>%
     summarise(n_ch = sum(CH_Binary), n_total = n())
-```
-
-# Mutation Table - TNBC and CRC
-```{r mutation_table_tnbc_crc, include=TRUE, message = FALSE, warning = FALSE}
-num_mutations_per_person_tnbc <- g1_df %>%
-    filter(Cohort == "TNBC" | Cohort == "Untreated") %>%
-    filter(average_AF >= 0.002) %>%
-    group_by(DeID, Gene, Trilaciclib, whichdraw) %>%
-    summarise(n = sum(putative_driver)) %>%
-    pivot_wider(names_from = Gene, values_from = n, values_fill = 0) %>%
-    ungroup() 
-
-g1_mut_table_tnbc <- g1_demo %>% 
-    filter(Cohort == "TNBC" | Cohort == "Untreated") %>%
-    dplyr::select(DeID, Trilaciclib, Age, whichdraw) %>% 
-    left_join(num_mutations_per_person_tnbc) %>%
-    group_by(DeID, Trilaciclib, Age, whichdraw) %>%
-    summarise_if(is.numeric, function(x) sum(x != 0, na.rm = TRUE))
-
-num_mutations_per_person_crc <- g1_df %>%
-    filter(Cohort == "CRC" | Cohort == "Untreated") %>%
-    filter(average_AF >= 0.002) %>%
-    group_by(DeID, Gene, Trilaciclib, whichdraw) %>%
-    summarise(n = sum(putative_driver)) %>%
-    pivot_wider(names_from = Gene, values_from = n, values_fill = 0) %>%
-    ungroup() 
-
-g1_mut_table_crc <- g1_demo %>% 
-    filter(Cohort == "CRC" | Cohort == "Untreated") %>%
-    dplyr::select(DeID, Trilaciclib, Age, whichdraw) %>% 
-    left_join(num_mutations_per_person_crc) %>%
-    group_by(DeID, Trilaciclib, Age, whichdraw) %>%
-    summarise_if(is.numeric, function(x) sum(x != 0, na.rm = TRUE))
 ```
 
 # Figure 1a - SCLC Schematic
@@ -429,13 +461,6 @@ ggsave(paste0(figures_save_path, "Figure1B.png"), plot = fig1b, width = 14, heig
 
 # Figure 1C - Waterfall Plot
 ```{r fig1c}
-# g1_tp %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
-#     filter(
-#         all_time_points == TRUE |
-#         (all_time_points == FALSE & called == TRUE) |
-#         (all_time_points == FALSE & called == FALSE & preVAF >= 0.001)
-#     )
-    
 df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
     filter(VariantClass != "synonymous_variant", putative_driver == 1, whichdraw == "PreTx") %>%
     tidyr::separate(key, into= c("Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"), sep = ":") %>%
@@ -456,6 +481,7 @@ df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
         ),
         stringsAsFactors = FALSE
     )
+fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.names = FALSE)
 clinical_data <- g1_df %>%
     mutate(
         Tumor_Sample_Barcode = DeID,
@@ -488,7 +514,6 @@ df_to_plot <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
     mutate(
         total = sum(n),
         percentage = (n / total) * 100,
-        #vaf_bin = factor(vaf_bin, levels = c("0.1-0.2% VAF", "0.2-1% VAF", "1-5% VAF", ">=5% VAF")),
         vaf_bin = factor(vaf_bin, levels = c(">=5% VAF", "1-5% VAF", "0.2-1% VAF", "0.1-0.2% VAF")),
         Gene = factor(Gene, levels = c(gene_list))
     )
@@ -510,7 +535,6 @@ fig1d <- df_to_plot %>%
     panel_theme_basic +
     theme(
         axis.text.x = element_text(angle = 45, hjust = 1),
-        #axis.text.y = element_text(angle = 90, hjust = 1)
         plot.margin = margin(2, 1, 1, 1, "cm")
     ) +
     scale_fill_nejm()
@@ -558,13 +582,6 @@ g1_mut_table %>%
     group_by(Trilaciclib) %>%
     summarise(n_ch = sum(DDR_Mutations), n_total = n())
 
-glm(
-    formula = as.formula("DDR_Mutations ~ Treatment + Age"),
-    family = binomial(link = "logit"),
-    data = g1_mut_table %>%
-        filter(whichdraw == "PostTx")
-) %>% sjPlot::get_model_data(type = "est")
-
 fig1e <- g1_mut_table %>%
     filter(whichdraw == "PostTx") %>%
     group_by(Treatment) %>%
@@ -607,7 +624,8 @@ fig1e <- g1_mut_table %>%
     scale_y_continuous(labels = scales::percent, limits = c(NA, 0.6), expand = c(0, 0)) +
     scale_fill_nejm() +
     scale_color_nejm()
-    #scale_fill_manual(values = treatment_colors)
+
+# If we want to add significance annotations, we can use the following code
     # do.call(geom_signif, default_sig(0.6, 0.75, 1, model_treatment_gene$p.value[1], model_treatment_gene$p.stars[1], show_values = FALSE)) +
     # do.call(geom_signif, default_sig(0.65, 0.75, 1.25, model_treatment_gene$p.value[2], model_treatment_gene$p.stars[2], show_values = FALSE)) +
     # do.call(geom_signif, default_sig(0.7, 1, 1.25, model_treatment_gene$p.value[3], model_treatment_gene$p.stars[3], show_values = FALSE)) +
@@ -638,6 +656,7 @@ fig1e <- g1_mut_table %>%
     #do.call(geom_signif, default_sig(0.6, 9.75, 10, model_treatment_gene$p.value[28], model_treatment_gene$p.stars[28], show_values = FALSE, hide_ns = FALSE)) +
     #do.call(geom_signif, default_sig(0.65, 9.75, 10.25, model_treatment_gene$p.value[29], model_treatment_gene$p.stars[29], show_values = FALSE, hide_ns = FALSE)) +
     #do.call(geom_signif, default_sig(0.7, 10, 10.25, model_treatment_gene$p.value[30], model_treatment_gene$p.stars[30], show_values = FALSE, hide_ns = FALSE)) 
+
 fig1e
 ggsave(paste0(figures_save_path, "Figure1E.png"), plot = fig1e, width = 10, height = 6, dpi = 300)
 ```
@@ -709,188 +728,30 @@ ggsave(paste0(figures_save_path, "Figure1E_Continued.png"), plot = fig1e_cont, w
 
 # Figure 1F - Small Cell Lung Cancer Growth Rate Plot
 ```{r fig1f, fig.width=4.8, fig.height=4.2}
-df_to_plot <- g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1"
-        )
-    )
+df_to_plot <- g1_tp %>%
+    filter(Cohort == "SCLC" | Cohort == "Untreated") %>%    # Filter for SCLC and Untreated cohorts
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%   # Filter for DTA and DDR gene classes
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")    # Remove Inf and -Inf growth rates
 
-# Calculate using Log10
-df_to_plot <- df_to_plot %>%
-    mutate(
-        growth_rate = log10(postVAF/preVAF) / change_in_days
-    )
+model_growth_rate_class <- model_growth_rate_class_fun(df_to_plot)
 
-# df_to_plot <- df_to_plot %>%
-#     filter(
-#         !(preVAF < 0.002 & postVAF < 0.002)# & all_time_points == FALSE)
-#     )
-
-model_growth_rate_class_geeglm <- rbind(
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>% 
-            mutate(
-                preAge = as.numeric(preAge)
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DDR"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(
-                preAge = as.numeric(preAge),
-                Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DDR"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-            mutate(
-                preAge = as.numeric(preAge)
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DTA"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(
-                preAge = as.numeric(preAge),
-                Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DTA"
-    )
-)
-
-model_growth_rate_class <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    )
-)
-model_growth_rate_class <- model_growth_rate_class %>% 
-    filter(term == "UntreatedVSTrilaciclib" | term == "UntreatedVSPlacebo" | term == "TrilaciclibVSPlacebo")
-
+# Absolute DDR Growth Rate Calculations
 df_to_plot %>%
     filter(Gene_Class == "DDR") %>%
-    filter(Trilaciclib != "Untreated") %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     group_by(Trilaciclib) %>%
     summarise(
         median_gr = median(growth_rate),
         average_gr = mean(growth_rate),
-    )
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
 
 counts <- df_to_plot %>%
-    filter(growth_rate != Inf & growth_rate != -Inf) %>%
-    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%
     group_by(Trilaciclib, Gene_Class) %>%
     summarise(n = n(), .groups = "drop")
 
-df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
+fig1f <- df_to_plot %>%
     ggplot(
         aes(
             x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
@@ -910,12 +771,12 @@ df_to_plot %>%
     panel_theme_basic +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
+    #do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    #do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    #do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
 fig1f
 ggsave(paste0(figures_save_path, "Figure1F.png"), plot = fig1f, width = 12, height = 10, dpi = 300)
 ```
@@ -923,175 +784,25 @@ ggsave(paste0(figures_save_path, "Figure1F.png"), plot = fig1f, width = 12, heig
 # Figure 2C - Colorectal Cancer Growth Rate Plot
 ```{r fig2c, fig.width=10, fig.height=10}
 df_to_plot <- g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance"
-        )
-   )
+    filter(Cohort == "CRC" | Cohort == "Untreated") %>%     # Filter for CRC and Untreated cohorts
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%   # Filter for DTA and DDR gene classes
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")    # Remove Inf and -Inf growth rates
 
-# df_to_plot <- df_to_plot %>%
-#     filter(
-#         !(preVAF < 0.002 & postVAF < 0.002)# & all_time_points == FALSE)
-#     )
+model_growth_rate_class <- model_growth_rate_class_fun(df_to_plot)
 
-model_growth_rate_class_geeglm <- rbind(
-    geeglm(
-        formula = growth_rate ~ Trilaciclib,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>% 
-            #mutate(
-            #    preAge = as.numeric(preAge)
-            #) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DDR"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(
-                #preAge = as.numeric(preAge),
-                Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DDR"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-            #mutate(
-            #    preAge = as.numeric(preAge)
-            #) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DTA"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(
-                #preAge = as.numeric(preAge),
-                Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DTA"
-    )
-)
-
-model_growth_rate_class <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    )
-)
-model_growth_rate_class <- model_growth_rate_class %>% 
-    filter(term == "UntreatedVSTrilaciclib" | term == "UntreatedVSPlacebo" | term == "TrilaciclibVSPlacebo")
-
+# Absolute DDR Growth Rate Calculations
 df_to_plot %>%
     filter(Gene_Class == "DDR") %>%
-    filter(Trilaciclib != "Untreated") %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     group_by(Trilaciclib) %>%
     summarise(
         median_gr = median(growth_rate),
         average_gr = mean(growth_rate),
-    )
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
 
 counts <- df_to_plot %>%
-    filter(growth_rate != Inf & growth_rate != -Inf) %>%
-    filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%
     group_by(Trilaciclib, Gene_Class) %>%
     summarise(n = n(), .groups = "drop")
 
@@ -1119,9 +830,9 @@ fig2c <- df_to_plot %>%
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
 fig2c
 ggsave(paste0(figures_save_path, "Figure2C.png"), plot = fig2c, width = 12, height = 8, dpi = 300)
@@ -1129,185 +840,29 @@ ggsave(paste0(figures_save_path, "Figure2C.png"), plot = fig2c, width = 12, heig
 
 # Figure 2D - Triple Negative Breast Cancer Growth Rate Plot
 ```{r fig2d, fig.width=10, fig.height=10}
-df_to_plot <- g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1"
-        )
-    )
+df_to_plot <- g1_tp %>%
+    filter(Cohort == "TNBC" | Cohort == "Untreated") %>%    # Filter for TNBC and Untreated cohorts
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%   # Filter for DTA and DDR gene classes
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")    # Remove Inf and -Inf growth rates
 
-# df_to_plot <- df_to_plot %>%
-#     filter(
-#         case_when(
-#             Cohort == "Untreated" ~ !(preVAF < 0.002 & postVAF < 0.002),
-#             Cohort == "TNBC" ~ !(preVAF < 0.002 & duringVAF < 0.002)
-#         )
-#     )
-
-model_growth_rate_class_geeglm <- rbind(
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>% 
-            mutate(
-                preAge = as.numeric(preAge)
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DDR"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(
-                preAge = as.numeric(preAge),
-                Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DDR"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-            mutate(
-                preAge = as.numeric(preAge)
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DTA"
-    ),
-    geeglm(
-        formula = growth_rate ~ Trilaciclib + preAge,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(
-                preAge = as.numeric(preAge),
-                Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))
-            ) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf"),
-        id = DeID,
-        corstr = "exchangeable"
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            term == "preAge" ~ "Age"
-        ),
-        Gene_Class = "DTA"
-    )
-)
-
-model_growth_rate_class <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    )
-)
-model_growth_rate_class <- model_growth_rate_class %>% 
-    filter(term == "UntreatedVSTrilaciclib" | term == "UntreatedVSPlacebo" | term == "TrilaciclibVSPlacebo")
+model_growth_rate_class <- model_growth_rate_class_fun(df_to_plot)
 
 df_to_plot %>%
     filter(Gene_Class == "DDR") %>%
-    filter(Trilaciclib != "Untreated") %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     group_by(Trilaciclib) %>%
     summarise(
         median_gr = median(growth_rate),
         average_gr = mean(growth_rate),
-    )
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
 
 counts <- df_to_plot %>%
-    filter(growth_rate != Inf & growth_rate != -Inf) %>%
-    filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%
     group_by(Trilaciclib, Gene_Class) %>%
     summarise(n = n(), .groups = "drop")
 
 fig2d <- df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
     ggplot(
         aes(
             x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
@@ -1327,12 +882,12 @@ fig2d <- df_to_plot %>%
     panel_theme_basic +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
 fig2d
 ggsave(paste0(figures_save_path, "Figure2D.png"), plot = fig2d, width = 12, height = 8, dpi = 300)
 ```
@@ -1340,150 +895,84 @@ ggsave(paste0(figures_save_path, "Figure2D.png"), plot = fig2d, width = 12, heig
 # Figure 2E - Genes
 ```{r fig2e, fig.width=10, fig.height=10}
 df_to_plot <- g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
+    filter(Gene_Class == "DDR") %>%                             # Filter for DDR gene class
+    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%    # Remove Inf and -Inf growth rates
     mutate(Variant_Classification = if_else(VariantClass == "missense_variant", "Missense", "Nonsense"))
 
-# df_to_plot <- df_to_plot %>%
-#     filter(
-#         case_when(
-#             Cohort == "Untreated" ~ !(preVAF < 0.002 & postVAF < 0.002),
-#             Cohort == "SCLC" ~ !(preVAF < 0.002 & postVAF < 0.002),# & all_time_points == FALSE),
-#             Cohort == "TNBC" ~ !(preVAF < 0.002 & duringVAF < 0.002),# & all_time_points == FALSE),
-#             Cohort == "CRC" ~ !(preVAF < 0.002 & postVAF < 0.002),# & all_time_points == FALSE),
-#             TRUE ~ TRUE
-#         )
-#     )
-
-model_growth_rate_gene <- map_dfr(c("TP53", "PPM1D", "CHEK2"), function(gene) {
-    print(gene)
-    model_growth_rate_gene <- rbind(
-        glm(
-            formula = growth_rate ~ Trilaciclib + Age,
-            data = df_to_plot %>%
-                filter(Gene == gene) %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-                term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-                TRUE ~ term
-            ),
-            gene = gene
-        ),
-        glm(
-            formula = growth_rate ~ Trilaciclib + Cohort + Age,
-            data = df_to_plot %>%
-                filter(Gene == gene) %>%
-                filter(Trilaciclib != "Untreated") %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        filter(!grepl("Cohort", term)) %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-                TRUE ~ term
-            ),
-            gene = gene
-        )
-    )
-    model_growth_rate_gene
-})
-model_growth_rate_gene <- model_growth_rate_gene %>% filter(term != "Age")
-
-model_growth_rate_variant_class <- map_dfr(c("Missense", "Nonsense"), function(classification) {    
-    print(classification)
-    model_growth_rate_variant_class <- rbind(
-        glm(
-            formula = growth_rate ~ Trilaciclib,
-            data = df_to_plot %>%
-                filter(Gene == "TP53") %>%
-                filter(Variant_Classification == classification) %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = ifelse(term == "TrilaciclibTrilaciclib", "UntreatedVSTrilaciclib", "UntreatedVSPlacebo"),
-            classification = classification
-        ),
-        glm(
-            formula = growth_rate ~ Trilaciclib + Cohort,
-            data = df_to_plot %>%
-                filter(Gene == "TP53") %>%
-                filter(Variant_Classification == classification) %>%
-                filter(Trilaciclib != "Untreated") %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        filter(!grepl("Cohort", term)) %>%
-        mutate(
-            term = "TrilaciclibVSPlacebo",
-            classification = classification
-        )
-    )
-    model_growth_rate_variant_class
-})
-model_growth_rate_variant_class
-
-model_growth_rate_gene_cohort <- map_dfr(c("TP53", "PPM1D", "CHEK2"), function(gene) {
-    map_dfr(c("SCLC", "TNBC", "CRC"), function(cancer) {
-        print(paste(gene, cancer))
-        rbind(
-            glm(
-                formula = growth_rate ~ Trilaciclib,
-                data = df_to_plot %>%
-                    filter(Gene == gene & Cohort == cancer) %>%
-                    filter(growth_rate != "Inf" & growth_rate != "-Inf")
+model_growth_rate_gene <- purrr::cross_df(list(
+    gene = c("TP53", "PPM1D", "CHEK2"),
+    comparison = c("all", "no_untreated")
+)) %>%
+    pmap_dfr(function(gene, comparison) {
+        print(paste(gene, comparison))
+        if (comparison == "all") {
+            df_subset <- df_to_plot %>% filter(Gene == gene)
+            model <- glm(
+                formula = growth_rate ~ Trilaciclib + Age,
+                data = df_subset
             ) %>%
                 sjPlot::get_model_data(type = "est") %>%
-                mutate(
-                    term = ifelse(term == "TrilaciclibTrilaciclib",
-                        "UntreatedVSTrilaciclib",
-                        "UntreatedVSPlacebo"
-                    )
-                ),
-            glm(
-                formula = growth_rate ~ Trilaciclib,
-                data = df_to_plot %>%
-                    filter(Gene == gene & Cohort == cancer) %>%
-                    filter(Trilaciclib != "Untreated") %>%
-                    filter(growth_rate != "Inf" & growth_rate != "-Inf")
+                filter(!grepl("Age", term), !grepl("Cohort", term)) %>%
+                mutate(term = ifelse(term == "TrilaciclibTrilaciclib", "UntreatedVSTrilaciclib", "UntreatedVSPlacebo"))
+        } else if (comparison == "no_untreated") {
+            df_subset <- df_to_plot %>% filter(Gene == gene & Trilaciclib != "Untreated")
+            model <- glm(
+                formula = growth_rate ~ Trilaciclib + Cohort + Age,
+                data = df_subset
             ) %>%
                 sjPlot::get_model_data(type = "est") %>%
-                mutate(
-                    term = "TrilaciclibVSPlacebo"
-                )
-        ) %>%
-            mutate(
-                Gene = gene,
-                Cohort = cancer
-            )
+                filter(!grepl("Age", term), !grepl("Cohort", term)) %>%
+                mutate(term = "TrilaciclibVSPlacebo")
+        }
+        model %>% mutate(gene = gene, comparison = comparison)
     })
-})
 
-df_to_plot %>% filter(growth_rate != "Inf" & growth_rate != "-Inf") %>% dplyr::select(Gene, Trilaciclib) %>% table()
+glm(
+    formula = growth_rate ~ Trilaciclib + Age + Cohort,
+    data = df_to_plot %>% filter(Gene == "TP53", Trilaciclib != "Untreated")
+) %>%
+    sjPlot::get_model_data(type = "est")
+
+model_growth_rate_variant_class <- purrr::cross_df(list(
+    classification = c("Missense", "Nonsense"),
+    comparison = c("all", "no_untreated")
+)) %>%
+    pmap_dfr(function(classification, comparison) {
+        print(paste(classification, comparison))
+        if (comparison == "all") {
+            df_subset <- df_to_plot %>% filter(Gene == "TP53", Variant_Classification == classification)
+            model <- glm(
+                formula = growth_rate ~ Trilaciclib + Age,
+                data = df_subset
+            ) %>%
+                sjPlot::get_model_data(type = "est") %>%
+                filter(!grepl("Age", term), !grepl("Cohort", term)) %>%
+                mutate(term = ifelse(term == "TrilaciclibTrilaciclib", "UntreatedVSTrilaciclib", "UntreatedVSPlacebo"))
+        } else if (comparison == "no_untreated") {
+            df_subset <- df_to_plot %>% filter(Gene == "TP53", Variant_Classification == classification, Trilaciclib != "Untreated")
+            model <- glm(
+                formula = growth_rate ~ Trilaciclib + Cohort + Age,
+                data = df_subset
+            ) %>%
+                sjPlot::get_model_data(type = "est") %>%
+                filter(!grepl("Age", term), !grepl("Cohort", term)) %>%
+                mutate(term = "TrilaciclibVSPlacebo")
+        }
+        model %>% mutate(classification = classification, comparison = comparison)
+    })
+
+df_to_plot %>% dplyr::select(Gene, Trilaciclib) %>% table()
 
 counts_genes <- df_to_plot %>%
-    filter(growth_rate != Inf & growth_rate != -Inf) %>%
-    filter(Gene_Class == "DDR") %>%
     group_by(Trilaciclib, Gene) %>%
     summarise(n = n(), .groups = "drop")
 
 counts_variant_class <- df_to_plot %>%
-    filter(growth_rate != Inf & growth_rate != -Inf) %>%
     filter(Gene == "TP53") %>%
     group_by(Trilaciclib, Variant_Classification) %>%
     summarise(n = n(), .groups = "drop")
 
 fig2e <- df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    filter(Gene_Class == "DDR" ) %>%
     ggplot(
         aes(
             x = Gene,
@@ -1501,37 +990,26 @@ fig2e <- df_to_plot %>%
         title = ""
     ) +
     panel_theme_basic +
-    # theme(
-    #     legend.text = element_text(size = 18),
-    #     axis.text.y = element_text(size = 18),
-    #     axis.text.x = element_text(size = 18),
-    #     axis.title.y = element_text(size = 18),
-    #     axis.title.x = element_text(size = 18),
-    # ) +
+    theme(
+        legend.text = element_text(size = 18),
+        axis.text.y = element_text(size = 18),
+        axis.text.x = element_text(size = 18),
+        axis.title.y = element_text(size = 18),
+        axis.title.x = element_text(size = 18),
+    ) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 5, 0.75, 1, model_growth_rate_gene$p.value[1], model_growth_rate_gene$p.stars[1], show_values = FALSE, hide_ns = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 6, 0.75, 1.25, model_growth_rate_gene$p.value[2], model_growth_rate_gene$p.stars[2], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 1, 1.25, model_growth_rate_gene$p.value[3], model_growth_rate_gene$p.stars[3], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 5, 1.75, 2, model_growth_rate_gene$p.value[4], model_growth_rate_gene$p.stars[4], show_values = FALSE, hide_ns = FALSE)) + 
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 6, 1.75, 2.25, model_growth_rate_gene$p.value[5], model_growth_rate_gene$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 7.1, 2, 2.25, model_growth_rate_gene$p.value[6], model_growth_rate_gene$p.stars[6], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 5, 2.75, 3, model_growth_rate_gene$p.value[7], model_growth_rate_gene$p.stars[7], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 6, 2.75, 3.25, model_growth_rate_gene$p.value[8], model_growth_rate_gene$p.stars[8], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 1, 1.25, model_growth_rate_gene$p.value[7], model_growth_rate_gene$p.stars[7], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 5, 1.75, 2, model_growth_rate_gene$p.value[3], model_growth_rate_gene$p.stars[3], show_values = FALSE, hide_ns = FALSE)) + 
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 6, 1.75, 2.25, model_growth_rate_gene$p.value[4], model_growth_rate_gene$p.stars[4], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 7.1, 2, 2.25, model_growth_rate_gene$p.value[8], model_growth_rate_gene$p.stars[8], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 5, 2.75, 3, model_growth_rate_gene$p.value[5], model_growth_rate_gene$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 6, 2.75, 3.25, model_growth_rate_gene$p.value[6], model_growth_rate_gene$p.stars[6], show_values = FALSE, hide_ns = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 7.1, 3, 3.25, model_growth_rate_gene$p.value[9], model_growth_rate_gene$p.stars[9], show_values = FALSE, hide_ns = FALSE)) 
 
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "DNMT3A"), 5, 3.75, 4, model_growth_rate_gene$p.value[10], model_growth_rate_gene$p.stars[10], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "DNMT3A"), 6, 3.75, 4.25, model_growth_rate_gene$p.value[11], model_growth_rate_gene$p.stars[11], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "DNMT3A"), 7, 4, 4.25, model_growth_rate_gene$p.value[12], model_growth_rate_gene$p.stars[12], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TET2"), 5, 4.75, 5, model_growth_rate_gene$p.value[13], model_growth_rate_gene$p.stars[13], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TET2"), 6, 4.75, 5.25, model_growth_rate_gene$p.value[14], model_growth_rate_gene$p.stars[14], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TET2"), 7, 5, 5.25, model_growth_rate_gene$p.value[15], model_growth_rate_gene$p.stars[15], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "ASXL1"), 5, 5.75, 6, model_growth_rate_gene$p.value[16], model_growth_rate_gene$p.stars[16], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "ASXL1"), 6, 5.75, 6.25, model_growth_rate_gene$p.value[17], model_growth_rate_gene$p.stars[17], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "ASXL1"), 7, 6, 6.25, model_growth_rate_gene$p.value[18], model_growth_rate_gene$p.stars[18], show_values = FALSE, hide_ns = FALSE))
-
-ext_fig_tp53_missense <- df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
+ext_fig_tp53 <- df_to_plot %>%
     filter(Gene == "TP53") %>%
     ggplot(
         aes(
@@ -1546,7 +1024,7 @@ ext_fig_tp53_missense <- df_to_plot %>%
     geom_text(data = counts_variant_class, aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
     labs(
         y = "Growth Rate", 
-        x = '', 
+        x = 'Missense', 
         title = "TP53"
     ) +
     panel_theme_basic +
@@ -1554,200 +1032,93 @@ ext_fig_tp53_missense <- df_to_plot %>%
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 5, 0.75, 1, model_growth_rate_variant_class$p.value[1], model_growth_rate_variant_class$p.stars[1], show_values = FALSE, hide_ns = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 6, 0.75, 1.25, model_growth_rate_variant_class$p.value[2], model_growth_rate_variant_class$p.stars[2], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 1, 1.25, model_growth_rate_variant_class$p.value[3], model_growth_rate_variant_class$p.stars[3], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 5, 1.75, 2, model_growth_rate_variant_class$p.value[4], model_growth_rate_variant_class$p.stars[4], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 6, 1.75, 2.25, model_growth_rate_variant_class$p.value[5], model_growth_rate_variant_class$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 1, 1.25, model_growth_rate_variant_class$p.value[5], model_growth_rate_variant_class$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 5, 1.75, 2, model_growth_rate_variant_class$p.value[3], model_growth_rate_variant_class$p.stars[3], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 6, 1.75, 2.25, model_growth_rate_variant_class$p.value[4], model_growth_rate_variant_class$p.stars[4], show_values = FALSE, hide_ns = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 2, 2.25, model_growth_rate_variant_class$p.value[6], model_growth_rate_variant_class$p.stars[6], show_values = FALSE, hide_ns = FALSE))
 
-ext_fig_tp53_nonsense <- df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    filter(Gene == "TP53", Variant_Classification == "Nonsense") %>%
-    ggplot(
-        aes(
-            x = "Nonsense",
-            y = growth_rate, 
-            fill = Trilaciclib
-        )
-    ) +
-    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
-    geom_boxplot(outlier.shape = NA) +
-    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
-    geom_text(data = counts_variant_class %>% filter(Variant_Classification == "Nonsense"), aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
-    labs(
-        y = "Growth Rate", 
-        x = '', 
-        title = "TP53"
-    ) +
-    panel_theme_basic +
-    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
-    scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 5, 0.75, 1, model_growth_rate_variant_class$p.value[4], model_growth_rate_variant_class$p.stars[4], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 6, 0.75, 1.25, model_growth_rate_variant_class$p.value[5], model_growth_rate_variant_class$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 1, 1.25, model_growth_rate_variant_class$p.value[6], model_growth_rate_variant_class$p.stars[6], show_values = FALSE, hide_ns = FALSE))
-
-interaction_colors <- c(
-    "Untreated.Untreated" = "#BC3C29FF", 
-    
-    "Placebo.SCLC" = "#F4BC8C", 
-    "Placebo.TNBC" = "#E18727FF",
-    "Placebo.CRC" = "#A66421FF",
-    
-    "Trilaciclib.SCLC" = "#7ABD91",
-    "Trilaciclib.TNBC" = "#20854EFF",
-    "Trilaciclib.CRC" = "#166339FF"
-)
-
-df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    filter(Gene_Class == "DDR" ) %>%
-    mutate(group = interaction(Trilaciclib, Cohort)) %>%
-    ggplot(
-        aes(
-            x = Gene,
-            y = growth_rate, 
-            fill = group
-        )
-    ) +
-    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
-    geom_boxplot(outlier.shape = NA) +
-    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
-    #geom_text(data = counts_genes, aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
-    labs(
-        y = "Growth Rate", 
-        x = '', 
-        title = ""
-    ) +
-    panel_theme_basic +
-    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
-    scale_fill_manual(values = interaction_colors)
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53", Cohort == "SCLC"), 5, 0.75, 1, model_growth_rate_gene_cohort$p.value[1], model_growth_rate_gene_cohort$p.stars[1], show_values = FALSE, hide_ns = FALSE))
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53", Cohort == "SCLC"), 6, 0.75, 1.25, model_growth_rate_gene_cohort$p.value[2], model_growth_rate_gene_cohort$p.stars[2], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53", Cohort == "TNBC"), 7, 1, 1.25, model_growth_rate_gene_cohort$p.value[3], model_growth_rate_gene_cohort$p.stars[3], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53", Cohort == "TNBC"), 5, 1.75, 2, model_growth_rate_gene_cohort$p.value[4], model_growth_rate_gene_cohort$p.stars[4], show_values = FALSE, hide_ns = FALSE)) + 
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53", Cohort == "CRC"), 6, 1.75, 2.25, model_growth_rate_gene_cohort$p.value[5], model_growth_rate_gene_cohort$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53", Cohort == "CRC"), 7.1, 2, 2.25, model_growth_rate_gene_cohort$p.value[6], model_growth_rate_gene_cohort$p.stars[6], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D", Cohort == "SCLC"), 5, 2.75, 3, model_growth_rate_gene_cohort$p.value[7], model_growth_rate_gene_cohort$p.stars[7], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D", Cohort == "SCLC"), 6, 2.75, 3.25, model_growth_rate_gene_cohort$p.value[8], model_growth_rate_gene_cohort$p.stars[8], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D", Cohort == "TNBC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[9], model_growth_rate_gene_cohort$p.stars[9], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D", Cohort == "TNBC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[10], model_growth_rate_gene_cohort$p.stars[10], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D", Cohort == "CRC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[11], model_growth_rate_gene_cohort$p.stars[11], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D", Cohort == "CRC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[12], model_growth_rate_gene_cohort$p.stars[12], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2", Cohort == "SCLC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[13], model_growth_rate_gene_cohort$p.stars[13], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2", Cohort == "SCLC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[14], model_growth_rate_gene_cohort$p.stars[14], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2", Cohort == "TNBC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[15], model_growth_rate_gene_cohort$p.stars[15], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2", Cohort == "TNBC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[16], model_growth_rate_gene_cohort$p.stars[16], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2", Cohort == "CRC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[17], model_growth_rate_gene_cohort$p.stars[17], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2", Cohort == "CRC"), 7.1, 3, 3.25, model_growth_rate_gene_cohort$p.value[18], model_growth_rate_gene_cohort$p.stars[18], show_values = FALSE, hide_ns = FALSE))
-
 fig2e
-
-ext_fig_tp53_missense
-ext_fig_tp53_nonsense
+ext_fig_tp53
 
 ggsave(paste0(figures_save_path, "Figure2E.png"), plot = fig2e, width = 20, height = 8, dpi = 300)
 ```
 
 # Extended Figure - These take a long time to run and sometimes the server crashes, so they are commented out.
 ```{r lollipop, include=FALSE}
-#source("utils/custom_lollipop.R")
+colors.mutation_type <- brewer.pal(8,"Dark2")[1:8]
+names(colors.mutation_type) <- c("frameshift_variant", "inframe_insertion", "splice_region_variant", "inframe_deletion", 'start_lost','stop_gained','missense_variant', "synonymous_variant")
 
-# colors.mutation_type <- brewer.pal(8,"Dark2")[1:8]
-# names(colors.mutation_type) <- c("frameshift_variant", "inframe_insertion", "splice_region_variant", "inframe_deletion", 'start_lost','stop_gained','missense_variant', "synonymous_variant")
+prot.info = get_protein_info("TP53")
+ext_fig_tp53_lollipop <- g1_tp %>%
+    filter(Cohort != "Untreated", Gene == "TP53") %>%
+    mutate(
+        ID = DeID,
+        PROTEIN_CHANGE = gene_aachange,
+        PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
+        hit = case_when(
+            Trilaciclib == "Placebo" ~ 1,
+            Trilaciclib == "Trilaciclib" ~ 2
+        ),
+        gene = "TP53",
+        mutation_type = VariantClass
+    ) %>%
+    my_lollipop(dat.genetics.unique=., 
+                current.gene="TP53", 
+                protein_domain=prot.info$protein_domain, 
+                protein_length=prot.info$protein_length, 
+                cutoff.hotspot = 20,
+                colors.mutation_type=colors.mutation_type)
+ggsave(paste0(figures_save_path, "ExtendedFigure1A.png"), plot = ext_fig_tp53_lollipop, width = 13, height = 8, dpi = 300)
 
-# # g1_tp %>%
-# #     filter(Cohort != "Untreated", Gene == "TP53") %>%
-# #     mutate(
-# #         ID = DeID,
-# #         PROTEIN_CHANGE = gene_aachange,
-# #         PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
-# #         hit = case_when(
-# #             Trilaciclib == "Placebo" ~ 1,
-# #             Trilaciclib == "Trilaciclib" ~ 2
-# #         ),
-# #         gene = "TP53",
-# #         mutation_type = VariantClass
-# #     ) %>%
-# #     dplyr::select(PROTEIN_POS) %>%
-# #     filter(PROTEIN_POS >= 95 & PROTEIN_POS <= 288)
+prot.info = get_protein_info("PPM1D")
+ext_fig_ppm1d_lollipop <- g1_tp %>%
+    filter(Cohort != "Untreated", Gene == "PPM1D") %>%
+    mutate(
+        ID = DeID,
+        PROTEIN_CHANGE = gene_aachange,
+        PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
+        hit = case_when(
+            Trilaciclib == "Placebo" ~ 1,
+            Trilaciclib == "Trilaciclib" ~ 2
+        ),
+        gene = "PPM1D",
+        mutation_type = VariantClass
+    ) %>%
+    my_lollipop(dat.genetics.unique=., 
+                current.gene="PPM1D", 
+                protein_domain=prot.info$protein_domain, 
+                protein_length=prot.info$protein_length, 
+                cutoff.hotspot = 20,
+                colors.mutation_type=colors.mutation_type)
+ggsave(paste0(figures_save_path, "ExtendedFigure1B.png"), plot = ext_fig_ppm1d_lollipop, width = 13, height = 8, dpi = 300)
 
-# prot.info = get_protein_info("TP53")
-# ext_fig_tp53_lollipop <- g1_tp %>%
-#     filter(Cohort != "Untreated", Gene == "TP53") %>%
-#     mutate(
-#         ID = DeID,
-#         PROTEIN_CHANGE = gene_aachange,
-#         PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
-#         hit = case_when(
-#             Trilaciclib == "Placebo" ~ 1,
-#             Trilaciclib == "Trilaciclib" ~ 2
-#         ),
-#         gene = "TP53",
-#         mutation_type = VariantClass
-#     ) %>%
-#     my_lollipop(dat.genetics.unique=., 
-#                 current.gene="TP53", 
-#                 protein_domain=prot.info$protein_domain, 
-#                 protein_length=prot.info$protein_length, 
-#                 cutoff.hotspot = 20,
-#                 colors.mutation_type=colors.mutation_type)
-# ggsave(paste0(figures_save_path, "ExtendedFigure1A.png"), plot = ext_fig_tp53_lollipop, width = 12, height = 8, dpi = 300)
-
-# prot.info = get_protein_info("PPM1D")
-# ext_fig_ppm1d_lollipop <- g1_tp %>%
-#     filter(Cohort != "Untreated", Gene == "PPM1D") %>%
-#     mutate(
-#         ID = DeID,
-#         PROTEIN_CHANGE = gene_aachange,
-#         PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
-#         hit = case_when(
-#             Trilaciclib == "Placebo" ~ 1,
-#             Trilaciclib == "Trilaciclib" ~ 2
-#         ),
-#         gene = "PPM1D",
-#         mutation_type = VariantClass
-#     ) %>%
-#     my_lollipop(dat.genetics.unique=., 
-#                 current.gene="PPM1D", 
-#                 protein_domain=prot.info$protein_domain, 
-#                 protein_length=prot.info$protein_length, 
-#                 cutoff.hotspot = 20,
-#                 colors.mutation_type=colors.mutation_type)
-# ggsave(paste0(figures_save_path, "ExtendedFigure1B.png"), plot = ext_fig_ppm1d_lollipop, width = 12, height = 8, dpi = 300)
-
-# prot.info = get_protein_info("CHEK2")
-# ext_fig_chek2_lollipop <- g1_tp %>%
-#     filter(Cohort != "Untreated", Gene == "CHEK2") %>%
-#     mutate(
-#         ID = DeID,
-#         PROTEIN_CHANGE = gene_aachange,
-#         PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
-#         hit = case_when(
-#             Trilaciclib == "Placebo" ~ 1,
-#             Trilaciclib == "Trilaciclib" ~ 2
-#         ),
-#         gene = "CHEK2",
-#         mutation_type = VariantClass
-#     ) %>%
-#     my_lollipop(dat.genetics.unique=., 
-#                 current.gene="CHEK2", 
-#                 protein_domain=prot.info$protein_domain, 
-#                 protein_length=prot.info$protein_length, 
-#                 cutoff.hotspot = 20,
-#                 colors.mutation_type=colors.mutation_type)
-# ggsave(paste0(figures_save_path, "ExtendedFigure1C.png"), plot = ext_fig_chek2_lollipop, width = 12, height = 8, dpi = 300)
+prot.info = get_protein_info("CHEK2")
+ext_fig_chek2_lollipop <- g1_tp %>%
+    filter(Cohort != "Untreated", Gene == "CHEK2") %>%
+    mutate(
+        ID = DeID,
+        PROTEIN_CHANGE = gene_aachange,
+        PROTEIN_POS = as.numeric(sub(".*?([0-9]+).*", "\\1", sub(".*_", "", gene_aachange))),
+        hit = case_when(
+            Trilaciclib == "Placebo" ~ 1,
+            Trilaciclib == "Trilaciclib" ~ 2
+        ),
+        gene = "CHEK2",
+        mutation_type = VariantClass
+    ) %>%
+    my_lollipop(dat.genetics.unique=., 
+                current.gene="CHEK2", 
+                protein_domain=prot.info$protein_domain, 
+                protein_length=prot.info$protein_length, 
+                cutoff.hotspot = 20,
+                colors.mutation_type=colors.mutation_type)
+ggsave(paste0(figures_save_path, "ExtendedFigure1C.png"), plot = ext_fig_chek2_lollipop, width = 13, height = 8, dpi = 300)
 ```
 
 # Extended Figure 1 Bubble Plot
 ```{r bubble}
 df_to_plot_ddr <- g1_tp %>% 
     filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        ),
         Gene %in% DDR_genes,
         Cohort != "Untreated"
     ) %>%
@@ -1927,352 +1298,47 @@ ext_fig_chek2_bubble <- df_to_plot_ddr %>%
         plot.margin = margin(1, 1, 1, 1, "cm"),
     )
 ggsave(paste0(figures_save_path, "ExtendedFigure1F.png"), plot = ext_fig_chek2_bubble, width = 10, height = 7, dpi = 300)
-ggsave(paste0(figures_save_path, "ExtendedFigure1G.png"), plot = ext_fig_tp53_missense, width = 10, height = 7, dpi = 300)
-
+ggsave(paste0(figures_save_path, "ExtendedFigure1G.png"), plot = ext_fig_tp53, width = 10, height = 7, dpi = 300)
 ```
 
-# Sensitivity Analysis - Combined
-```{r sensitivity_combined}
-df_to_plot <- g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    )
+# Supplementary Table 1 - CH Mutation Variants
+```{r supp_table_1}
+g1_df %>%
+    filter(key != "" & key != "NA:NA:NA:NA") %>%
+    mutate(Gene = factor(Gene, levels = gene_list)) %>%
+    select(key, Gene) %>%
+    distinct() %>%
+    arrange(Gene) %>%
+    write.csv(paste0(figures_save_path, "SupplementaryTable1_CH_Mutations.csv"), row.names = FALSE)
+```
 
-model_growth_rate_gene <- map_dfr(c("TP53", "PPM1D", "CHEK2"), function(gene) {
-    print(gene)
-    model_growth_rate_gene <- rbind(
-        glm(
-            formula = growth_rate ~ Trilaciclib + Age + Sex + Race,
-            data = df_to_plot %>%
-                filter(Gene == gene) %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-            mutate(
-                term = case_when(
-                    term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-                    term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-                    TRUE ~ term
-                ),
-                gene = gene
-            ),
-        glm(
-            formula = growth_rate ~ Trilaciclib + Cohort + Age + Sex + Race,
-            data = df_to_plot %>%
-                filter(Gene == gene) %>%
-                filter(Trilaciclib != "Untreated") %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-            filter(!grepl("Cohort", term)) %>%
-            mutate(
-                term = case_when(
-                    term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-                    TRUE ~ term
-                ),
-                gene = gene
-            )
-    )
-    model_growth_rate_gene
-})
-model_growth_rate_gene
+# Supplementary Table 2 - Table Demographics
+```{r supp_table_2}
+table1(~ Age + Sex + Race + Ethnicity + SmokingStatus | Cohort + Trilaciclib, data = for_table %>% filter(whichdraw == "PreTx"))
+```
 
-supp_table_4 <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
+# Supplementary Table 3 - Timepoints Variants
+```{r supp_table_3}
+g1_tp %>%
+    select(DeID, Cohort, Trilaciclib, key, Gene, preVAF, duringVAF, postVAF, change_in_days) %>%
     mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Cohort + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(Gene_Class == "DTA") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
+        Timepoint_1_VAF = preVAF,
+        Timepoint_2_VAF = ifelse(Cohort == "TNBC", duringVAF, postVAF)
     ) %>%
-    sjPlot::get_model_data(type = "est") %>%
-    filter(!grepl("Cohort", term)) %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Cohort + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>%
-    sjPlot::get_model_data(type = "est") %>%
-    filter(!grepl("Cohort", term)) %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    )
-)
-# Supp Table 4
-supp_table_4
-
-supp_table_5 <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + SmokingStatus,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("Untreated", "SCLC", "TNBC"))) %>%
-            filter(Gene_Class == "DTA") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-                term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DTA"
-        ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Cohort + Age + Sex + Race + SmokingStatus,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("SCLC", "TNBC"))) %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(Gene_Class == "DTA") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>%
-        sjPlot::get_model_data(type = "est") %>%
-        filter(!grepl("Cohort", term)) %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DTA"
-        ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + SmokingStatus,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("Untreated", "SCLC", "TNBC"))) %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-                term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DDR"
-        ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Cohort + Age + Sex + Race + SmokingStatus,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("SCLC", "TNBC"))) %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>%
-        sjPlot::get_model_data(type = "est") %>%
-        filter(!grepl("Cohort", term)) %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DDR"
-        )
-)
-# Supp Table 5
-supp_table_5
-
-model_growth_rate_class <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("Untreated", "SCLC", "TNBC"))) %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity + SmokingStatus + change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("SCLC", "TNBC"))) %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("Untreated", "SCLC", "TNBC"))) %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib  + Age + Sex + Race + Ethnicity + SmokingStatus + change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN,
-        data = df_to_plot %>%
-            filter(Cohort != "CRC") %>%
-            mutate(Cohort = factor(Cohort, levels = c("SCLC", "TNBC"))) %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    )
-)
-
-model_growth_rate_class <- rbind(
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity + change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DTA") %>% 
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DTA"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-        term = case_when(
-            term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-            term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    ),
-    glm(
-        formula = growth_rate ~ Trilaciclib + Age + Sex + Race + Ethnicity + change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN,
-        data = df_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(
-         term = case_when(
-            term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-            TRUE ~ term
-        ),
-        Gene_Class = "DDR"
-    )
-)
+    select(-preVAF, -duringVAF, -postVAF) %>%
+    select(DeID, Cohort, Trilaciclib, key, Gene, Timepoint_1_VAF, Timepoint_2_VAF, change_in_days) %>%
+    write.csv(paste0(figures_save_path, "SupplementaryTable3_Timepoints_Variants.csv"), row.names = FALSE)
 ```
 
 # Supplementary Table 4 - Growth Rate Models with Cosmic Count
 ```{r supp_table_4}
-df_to_plot <- g1_tp %>% 
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    )
+g1_tp_tmp <- g1_tp %>% 
+    filter(Trilaciclib != "Untreated") %>%
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")
 
 model_growth_rate_cosmic_count_tp53 <- glm(
         formula = growth_rate ~ Trilaciclib + preVAF + CosmicCount + heme_cosmic_count + Cohort + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Gene == "TP53") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
+        data = g1_tp_tmp %>% filter(Gene == "TP53")
     ) %>% sjPlot::get_model_data(type = "est") %>%
     mutate(
         term = case_when(
@@ -2286,10 +1352,7 @@ model_growth_rate_cosmic_count_tp53
 
 model_growth_rate_cosmic_count_ppm1d <- glm(
         formula = growth_rate ~ Trilaciclib + preVAF + CosmicCount + heme_cosmic_count + Cohort + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Gene == "PPM1D") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
+        data = g1_tp_tmp %>% filter(Gene == "PPM1D")
     ) %>% sjPlot::get_model_data(type = "est") %>%
     mutate(
         term = case_when(
@@ -2303,10 +1366,7 @@ model_growth_rate_cosmic_count_ppm1d
 
 model_growth_rate_cosmic_count_chek2 <- glm(
         formula = growth_rate ~ Trilaciclib + preVAF + CosmicCount + heme_cosmic_count + Cohort + Age + Sex + Race,
-        data = df_to_plot %>%
-            filter(Gene == "CHEK2") %>%
-            filter(Trilaciclib != "Untreated") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf")
+        data = g1_tp_tmp %>% filter(Gene == "CHEK2")
     ) %>% sjPlot::get_model_data(type = "est") %>%
     mutate(
         term = case_when(
@@ -2320,10 +1380,7 @@ model_growth_rate_cosmic_count_chek2
 
 model_growth_rate_cosmic_count_ddr <- glm(
     formula = growth_rate ~ Trilaciclib + preVAF + CosmicCount + heme_cosmic_count + Cohort + Age + Sex + Race,
-    data = df_to_plot %>%
-        filter(Gene_Class == "DDR") %>%
-        filter(Trilaciclib != "Untreated") %>%
-        filter(growth_rate != "Inf" & growth_rate != "-Inf")
+    data = g1_tp_tmp %>% filter(Gene_Class == "DDR")
 ) %>%
     sjPlot::get_model_data(type = "est") %>%
     mutate(
@@ -2337,413 +1394,11 @@ model_growth_rate_cosmic_count_ddr <- glm(
 model_growth_rate_cosmic_count_ddr
 ```
 
-# TP53 Line Plot
-```{r}
-g1_tp %>%
-    filter(Gene_Class == "DDR", change_in_days < 1000) %>%
-    filter(preVAF > 0.01) %>%
-    filter(Cohort != "Untreated") %>%
-    filter(
-        ifelse(
-            Cohort == "TNBC",
-            duringVAF > 0.01,
-            postVAF > 0.01
-        )
-    ) %>%
-    ggplot(
-        aes(
-            fill = Cohort,
-            color = Trilaciclib,
-            shape = Cohort
-        )
-    ) +
-    geom_segment(
-        aes(
-            x = 0,
-            y = 0,
-            xend = change_in_days,
-            yend = change_in_VAF
-        ),
-        size = 0.5
-    ) +
-    geom_point(aes(x = change_in_days, y = change_in_VAF)) +
-    geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.5) +
-    labs(
-        x = "Change in Days",
-        y = "Change in VAF",
-        fill = "Cohort",
-    ) +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    scale_color_nejm() +
-        scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.01),
-        limits = \(x) {
-              c(-max(abs(x)), max(abs(x)))
-        }
-    ) +
-    theme(
-        plot.margin = margin(1, 1, 1, 1, "cm")
-    )
-
-g1_tp %>%
-    filter(Gene == "TP53") %>%
-    filter(
-        ifelse(
-            Cohort == "TNBC",
-            duringVAF > 0.01,
-            postVAF > 0.01
-        )
-    ) %>%
-    mutate(
-        pre = preVAF,
-        post = ifelse(Cohort == "TNBC", duringVAF, postVAF),
-    ) %>%
-    dplyr::select(pre, post, change_in_days, Cohort, Trilaciclib) %>%
-    filter(change_in_days < 500) %>%
-    ggplot(aes(fill = Cohort, color = Cohort, shape = Trilaciclib)) +
-    geom_segment(
-        aes(
-            x = 0,
-            y = pre,
-            xend = change_in_days,
-            yend = post
-        ),
-        size = 0.5
-    ) +
-    geom_point(
-        aes(
-            x = change_in_days,
-            y = post
-        )
-    ) +
-    geom_point(
-        aes(
-            x = 0,
-            y = pre
-        )
-    ) +
-    labs(
-        x = "Change in Days",
-        y = "VAF",
-        fill = "Cohort",
-    ) +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    scale_color_nejm() +
-    scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.01),
-        #limits = \(x) {
-        #      c(-max(abs(x)), max(abs(x)))
-        #}
-    )
-```
-
-# Age Ribbon Plots - TNBC and CRC
-```{r age_plots_tnbc_crc}
-g1_mut_table %>%
-    filter(whichdraw == "PreTx") %>%
-    dplyr::select(DeID, Age, Trilaciclib, TP53, PPM1D, CHEK2) %>%
-    mutate(
-        CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0)
-    ) %>%
-    group_by(Trilaciclib) %>%
-    summarise(n_ddr_ch = sum(CH_Binary), n_total = n())
-
-g1_mut_table_tnbc %>%
-    filter(whichdraw == "PreTx") %>%
-    dplyr::select(DeID, Age, Trilaciclib, TP53, PPM1D, CHEK2) %>%
-    mutate(
-        CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0)
-    ) %>%
-    group_by(Trilaciclib) %>%
-    summarise(n_ddr_ch = sum(CH_Binary), n_total = n())
-
-g1_mut_table_crc %>%
-    filter(whichdraw == "PreTx") %>%
-    dplyr::select(DeID, Age, Trilaciclib, TP53, PPM1D, CHEK2) %>%
-    mutate(
-        CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0)
-    ) %>%
-    group_by(Trilaciclib) %>%
-    summarise(n_ddr_ch = sum(CH_Binary), n_total = n())
-
-g1_mut_table_tnbc %>%
-    filter(whichdraw == "PreTx") %>%
-    dplyr::select(DeID, Age, Trilaciclib, TP53, PPM1D, CHEK2) %>%
-    mutate(
-        CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0),
-        Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", "Baseline TNBC"),
-        Treatment = factor(Treatment, levels = c("Healthy Control", "Baseline TNBC"))
-    ) %>%
-    ggplot(
-        aes(
-            x = Age,
-            y = CH_Binary,
-            fill = Treatment
-        )
-    ) +
-    geom_smooth(
-        aes(
-            fill = Treatment,
-            color = Treatment
-        ),
-        method = "gam",
-        formula = y ~ s(x),
-        method.args = list(family = "binomial"),
-        size = 1.5,
-        se = TRUE,
-        alpha = 0.1
-    ) +
-    scale_y_continuous(labels = scales::label_percent(accuracy = 1L), expand = expansion(add = c(0.01, 0.01))) +
-    scale_x_continuous(breaks = seq(0, 90, by = 5)) + 
-    labs(x = "Age", y = "Frequency (%)") +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    scale_color_nejm() +
-    #scale_fill_manual(values = treatment_colors) +
-    #scale_color_manual(values = treatment_colors) +
-    theme(
-        plot.margin = margin(0, 1, 1, 1, "cm")
-    )
-
-g1_mut_table_crc %>%
-    filter(whichdraw == "PreTx", Age >= 45) %>%
-    mutate(
-        CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0),
-        Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", "Baseline CRC"),
-        Treatment = factor(Treatment, levels = c("Healthy Control", "Baseline CRC"))
-    ) %>%
-    ggplot(
-        aes(
-            x = Age,
-            y = CH_Binary,
-            fill = Treatment
-        )
-    ) +
-    geom_smooth(
-        aes(
-            fill = Treatment,
-            color = Treatment
-        ),
-        method = "gam",
-        formula = y ~ s(x),
-        method.args = list(family = "binomial"),
-        size = 1.5,
-        se = TRUE,
-        alpha = 0.1
-    ) +
-    scale_y_continuous(labels = scales::label_percent(accuracy = 1L), expand = expansion(add = c(0.01, 0.01))) +
-    scale_x_continuous(breaks = seq(0, 90, by = 5)) + 
-    labs(x = "Age", y = "Frequency (%)") +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    scale_color_nejm() +
-    #scale_fill_manual(values = treatment_colors) +
-    #scale_color_manual(values = treatment_colors) +
-    theme(
-        plot.margin = margin(0, 1, 1, 1, "cm")
-    )
-```
-
-# Mutation Distribution Plot
-```{r mutation_distribution_tnbc_crc}
-g1_df %>% filter(Cohort == "TNBC" | Cohort == "Untreated") %>%
-    filter(whichdraw == "PreTx") %>%
-    mutate(
-        vaf_bin = case_when(
-            average_AF >= 0.002 & average_AF < 0.01 ~ "0.2-1% VAF", 
-            average_AF >= 0.01 & average_AF < 0.05 ~ "1-5% VAF",
-            average_AF >= 0.05 ~ ">=5% VAF",
-            average_AF >= 0.001 & average_AF < 0.002 ~ "0.1-0.2% VAF"
-        )
-    ) %>%
-    group_by(Gene, vaf_bin) %>%
-    summarise(n = n()) %>%
-    group_by(Gene) %>%
-    mutate(
-        total = sum(n),
-        percentage = (n / total) * 100,
-        #vaf_bin = factor(vaf_bin, levels = c("0.1-0.2% VAF", "0.2-1% VAF", "1-5% VAF", ">=5% VAF")),
-        vaf_bin = factor(vaf_bin, levels = c(">=5% VAF", "1-5% VAF", "0.2-1% VAF", "0.1-0.2% VAF")),
-        Gene = factor(Gene, levels = c(gene_list))
-    ) %>%
-    ggplot(
-        aes(
-            x = Gene,
-            y = percentage,
-            fill = vaf_bin
-        )
-    ) +
-    geom_bar(stat = "identity") +
-    labs(
-        x = "Gene",
-        y = "Percentage of Mutations at Baseline",
-        fill = "VAF Bin"
-    ) +
-    panel_theme_basic +
-    theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        #axis.text.y = element_text(angle = 90, hjust = 1)
-        plot.margin = margin(2, 1, 1, 1, "cm")
-    ) +
-    scale_fill_nejm()
-
-g1_df %>% filter(Cohort == "CRC" | Cohort == "Untreated") %>%
-    filter(whichdraw == "PreTx") %>%
-    mutate(
-        vaf_bin = case_when(
-            average_AF >= 0.002 & average_AF < 0.01 ~ "0.2-1% VAF", 
-            average_AF >= 0.01 & average_AF < 0.05 ~ "1-5% VAF",
-            average_AF >= 0.05 ~ ">=5% VAF",
-            average_AF >= 0.001 & average_AF < 0.002 ~ "0.1-0.2% VAF"
-        )
-    ) %>%
-    group_by(Gene, vaf_bin) %>%
-    summarise(n = n()) %>%
-    group_by(Gene) %>%
-    mutate(
-        total = sum(n),
-        percentage = (n / total) * 100,
-        #vaf_bin = factor(vaf_bin, levels = c("0.1-0.2% VAF", "0.2-1% VAF", "1-5% VAF", ">=5% VAF")),
-        vaf_bin = factor(vaf_bin, levels = c(">=5% VAF", "1-5% VAF", "0.2-1% VAF", "0.1-0.2% VAF")),
-        Gene = factor(Gene, levels = c(gene_list))
-    ) %>%
-    ggplot(
-        aes(
-            x = Gene,
-            y = percentage,
-            fill = vaf_bin
-        )
-    ) +
-    geom_bar(stat = "identity") +
-    labs(
-        x = "Gene",
-        y = "Percentage of Mutations at Baseline",
-        fill = "VAF Bin"
-    ) +
-    panel_theme_basic +
-    theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        #axis.text.y = element_text(angle = 90, hjust = 1)
-        plot.margin = margin(2, 1, 1, 1, "cm")
-    ) +
-    scale_fill_nejm()
-```
-
-# Mutation Proportion Plot
-```{r mutation_proportion_tnbc_crc}
-# TNBC
-g1_mut_table_tnbc %>%
-    #filter(ifelse(Trilaciclib != "Untreated", whichdraw == "MidTx", whichdraw == "PostTx")) %>%
-    filter(whichdraw == "PreTx") %>%
-    mutate(Treatment = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))) %>%
-    group_by(Treatment) %>%
-    dplyr::select(-Age, -Trilaciclib, -whichdraw) %>%
-    summarise_if(is.numeric, sum, na.rm = TRUE) %>%
-    pivot_longer(cols = -c(Treatment), names_to = "Gene", values_to = "n") %>%
-    group_by(Treatment, Gene) %>%
-    left_join(
-        g1_mut_table_tnbc %>%
-            #filter(ifelse(Trilaciclib != "Untreated", whichdraw == "MidTx", whichdraw == "PostTx")) %>%
-            filter(whichdraw == "PreTx") %>%
-            mutate(Treatment = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))) %>%
-            group_by(Treatment) %>%
-            summarise(total_patients = n())
-    ) %>%
-    mutate(
-        Proportion = n / total_patients,
-        Gene = factor(Gene, levels = c(gene_list)),
-        Treatment = factor(Treatment, levels = c("Untreated", "Placebo", "Trilaciclib"))
-        #Trilaciclib = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))
-    ) %>%
-    ggplot(
-        aes(
-        x = Gene,
-        y = Proportion,
-        fill = Treatment
-        )
-    ) +
-    geom_bar(color = "black", stat = "identity", position = position_dodge()) +
-    labs(
-        x = "",
-        y = "Percent of Patients\nwith Mutated Gene\n Post-Treatment",
-        fill = "Treatment"
-    ) +
-    panel_theme_basic +
-    theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = c(0.8, 0.6),
-        legend.direction = "vertical",
-        plot.margin = margin(2, 0, 1, 1, "cm")
-    ) +
-    scale_y_continuous(labels = scales::percent, limits = c(NA, 0.6), expand = c(0, 0)) +
-    scale_fill_nejm() +
-    scale_color_nejm()
-
-# CRC
-g1_mut_table_crc %>%
-    #filter(whichdraw == "PostTx") %>%
-    filter(whichdraw == "PreTx") %>%
-    mutate(Treatment = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))) %>%
-    group_by(Treatment) %>%
-    dplyr::select(-Age, -Trilaciclib, -whichdraw) %>%
-    summarise_if(is.numeric, sum, na.rm = TRUE) %>%
-    pivot_longer(cols = -c(Treatment), names_to = "Gene", values_to = "n") %>%
-    group_by(Treatment, Gene) %>%
-    left_join(
-        g1_mut_table_crc %>%
-            #filter(whichdraw == "PostTx") %>%
-            filter(whichdraw == "PreTx") %>%
-            mutate(Treatment = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))) %>%
-            group_by(Treatment) %>%
-            summarise(total_patients = n())
-    ) %>%
-    mutate(
-        Proportion = n / total_patients,
-        Gene = factor(Gene, levels = c(gene_list)),
-        Treatment = factor(Treatment, levels = c("Untreated", "Placebo", "Trilaciclib"))
-        #Trilaciclib = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))
-    ) %>%
-    ggplot(
-        aes(
-        x = Gene,
-        y = Proportion,
-        fill = Treatment
-        )
-    ) +
-    geom_bar(color = "black", stat = "identity", position = position_dodge()) +
-    labs(
-        x = "",
-        y = "Percent of Patients\nwith Mutated Gene\n Post-Treatment",
-        fill = "Treatment"
-    ) +
-    panel_theme_basic +
-    theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = c(0.8, 0.6),
-        legend.direction = "vertical",
-        plot.margin = margin(2, 0, 1, 1, "cm")
-    ) +
-    scale_y_continuous(labels = scales::percent, limits = c(NA, 0.6), expand = c(0, 0)) +
-    scale_fill_nejm() +
-    scale_color_nejm()
-
-```
-
-# Blood Counts Analysis
+# Supplemental Table 5 - Blood Counts Analysis
 ```{r blood_counts}
 g1_tp_tmp <- g1_tp %>%
-        filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
     filter(Cohort != "Untreated") %>%
+    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     mutate(Cohort = factor(Cohort, levels = c("SCLC", "TNBC", "CRC"))) %>%
     mutate(
         VAF_1 = preVAF * 100,
@@ -2754,302 +1409,28 @@ g1_tp_tmp <- g1_tp %>%
         log_VAF_1 = log(VAF_1),
         log_VAF_2 = log(VAF_2),
     ) %>%
-    filter(
-        VAF_1 > 0 & VAF_2 > 0
-    )
+    filter(VAF_1 > 0 & VAF_2 > 0)
 
-model_change_in_prop_blood_counts <- map_dfr(c("DNMT3A", "TET2", "ASXL1", "TP53", "PPM1D", "CHEK2"), function(gene){
-    print(gene)
-    glm(
-        formula = VAF_2 ~ change_in_prop_BASO + change_in_prop_EOS + change_in_prop_LYM + change_in_prop_MONO + change_in_prop_NEUT + VAF_1,
-        family = "gaussian",
-        data = g1_tp_tmp %>% filter(Gene == gene)
-    ) %>%
-    sjPlot::get_model_data(type = "est") %>%
-    mutate(Gene = gene)
-})
-
-model_change_in_prop_blood_counts_2 <- map_dfr(c("DNMT3A", "TET2", "ASXL1", "TP53", "PPM1D", "CHEK2"), function(gene){
-    print(gene)
-    glm(
-        formula = VAF_2/VAF_1 ~ change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN + Cohort + Trilaciclib,
-        #formula = log_VAF_2 - log_VAF_1 ~ Trilaciclib * change_in_days,
-        #formula = growth_rate ~ Trilaciclib + change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN,
-        data = g1_tp_tmp %>% filter(Gene == gene) #%>% filter(growth_rate != "Inf" & growth_rate != "-Inf")
-    ) %>%
-    sjPlot::get_model_data(type = "est") %>%
-    mutate(Gene = gene)
-})
-model_change_in_prop_blood_counts_2
-
-model_change_in_prop_blood_counts_3 <- map_dfr(c("DTA", "DDR"), function(gene_class){
+model_change_in_prop_blood_counts_gene_class <- map_dfr(c("DTA", "DDR"), function(gene_class){
     print(gene_class)
     glm(
         formula = VAF_2/VAF_1 ~ change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN + Cohort + Trilaciclib,
-        #formula = log_VAF_2 - log_VAF_1 ~ Trilaciclib * change_in_days,
-        #formula = growth_rate ~ Trilaciclib + change_in_prop_MONO + change_in_prop_LYM + change_in_prop_GRAN,
-        data = g1_tp_tmp %>% filter(Gene_Class == gene_class) #%>% filter(growth_rate != "Inf" & growth_rate != "-Inf")
+        data = g1_tp_tmp %>% filter(Gene_Class == gene_class)
     ) %>%
     sjPlot::get_model_data(type = "est") %>%
     mutate(Gene_Class = gene_class)
 })
-model_change_in_prop_blood_counts_3
+model_change_in_prop_blood_counts_gene_class
 ```
 
-# For Reviewer Comments
-```{r}
-# Spider Plot with Average Mean Slope
-g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    filter(!is.na(change_in_VAF), !is.na(Gene_Class)) %>%
-    mutate(
-        slope = change_in_VAF / change_in_days,
-        starting_vaf = ifelse(preVAF < 0.02, "<0.02 Starting VAF", ">=0.02 Starting VAF")
-    ) %>%
-    group_by(Trilaciclib, Gene_Class, starting_vaf) %>%
-    summarise(
-        mean_slope = mean(slope),
-        se_slope = sd(slope) / sqrt(n()),
-        .groups = "drop"
-    ) %>%
-    group_by(Trilaciclib, Gene_Class, starting_vaf) %>%
-    do({
-        x_seq <- seq(0, max(g1_tp$change_in_days), length.out = 100)
-        data.frame(
-            x = x_seq,
-            y = .$mean_slope * x_seq,
-            ymin = (.$mean_slope - .$se_slope) * x_seq,
-            ymax = (.$mean_slope + .$se_slope) * x_seq,
-            Trilaciclib = .$Trilaciclib
-        )
-    }) %>%
-    ggplot(
-        aes(x = x, color = Trilaciclib, fill = Trilaciclib)
-    ) +
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.2) +
-    geom_line(aes(y = y), size = 1, linetype = "dashed") +
-    geom_point(
-        data = g1_tp %>%
-            filter(!is.na(change_in_VAF), !is.na(Gene_Class)),
-        aes(x = change_in_days, y = change_in_VAF),
-        alpha = 0.5
-    ) +
-    geom_segment(
-        data = g1_tp %>%
-            filter(!is.na(change_in_VAF), !is.na(Gene_Class)),
-        aes(
-            x = 0,
-            y = 0,
-            xend = change_in_days,
-            yend = change_in_VAF
-        ),
-        alpha = 0.1
-    ) +
-    scale_color_nejm() +
-    scale_fill_nejm() +
-    scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.001),
-        limits = \(x) {
-            c(-max(abs(x)), max(abs(x)))
-        }
-    ) +
-    labs(x = "Change in Days", y = "Change in VAF") +
-    facet_wrap(~Gene_Class+starting_vaf, nrow = 2, ncol = 2) +
-    panel_theme_basic +
-    theme(
-        plot.margin = margin(1, 1, 1, 1, "cm")
-    )
-
-# Spider Plot by Gene with Starting VAF
-g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%
-    ungroup() %>%
-    group_by(DeID, Gene) %>%
-    mutate(
-        change_in_days = mean(change_in_days),
-        change_in_VAF = mean(change_in_VAF),
-        preVAF = mean(preVAF)
-    ) %>%
-    ungroup() %>%
-    ggplot(
-        aes(
-            x = change_in_days,
-            y = change_in_VAF,
-            color = Trilaciclib,
-        )
-    ) +
-    geom_point(
-        aes(x = change_in_days, y = change_in_VAF, size = preVAF),
-        alpha = 0.5
-    ) +
-    geom_segment(
-        aes(
-            x = 0,
-            y = 0,
-            xend = change_in_days,
-            yend = change_in_VAF
-        ),
-        alpha = 0.1
-    ) +
-    labs(
-        x = "Change in Days",
-        y = "Change in VAF",
-        color = "Trilaciclib"
-    ) +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    scale_color_nejm() +
-    scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.001),
-        limits = \(x) {
-            c(-max(abs(x)), max(abs(x)))
-        },
-        labels = scales::percent_format(accuracy = 0.1)
-    ) +
-        theme(
-            plot.margin = margin(1, 1, 1, 1, "cm"),
-            # legend.position = "bottom"
-        ) +
-        facet_wrap(~Gene)
-
-# Taking the Largest Clone per Patient per Gene
+# Supplemental Figure 1 - Percent Change in VAF per Months
+```{r supp_fig1, fig.width=10, fig.height=10}
 data_to_plot <- g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%
+    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
+    filter(Gene_Class == "DDR") %>%
     group_by(DeID, Gene) %>%
     slice_max(abs(change_in_VAF), n = 1) %>%
     ungroup() %>%
-    mutate(
-        # Setting Alpha Value to indicate how much the VAF has changed
-        alpha_val = case_when(
-            abs(growth_rate) < 0.01 ~ 0.2,
-            abs(growth_rate) >= 0.01 & abs(growth_rate) < 0.05 ~ 0.6,
-            abs(growth_rate) >= 0.5 ~ 0.9
-        ),
-        # Defining the size of the point based on the starting VAF
-        starting_vaf = case_when(
-            preVAF < 0.02 ~ "<2%",
-            preVAF >= 0.02 & preVAF < 0.05 ~ "2-5%",
-            preVAF >= 0.05 ~ ">=5%"
-        ),
-        starting_vaf = factor(starting_vaf, levels = c("<2%", "2-5%", ">=5%"))
-    )
-data_to_plot %>%
-    mutate(
-        slope = change_in_VAF / change_in_days
-    ) %>%
-    group_by(Trilaciclib, Gene_Class) %>%
-    summarise(
-        mean_slope = mean(slope),
-        se_slope = sd(slope) / sqrt(n()),
-        .groups = "drop"
-    ) %>%
-    group_by(Trilaciclib, Gene_Class) %>%
-    do({
-        x_seq <- seq(0, max(g1_tp$change_in_days), length.out = 100)
-        data.frame(
-            x = x_seq,
-            y = .$mean_slope * x_seq,
-            ymin = (.$mean_slope - .$se_slope) * x_seq,
-            ymax = (.$mean_slope + .$se_slope) * x_seq,
-            Trilaciclib = .$Trilaciclib
-        )
-    }) %>%
-    # ggplot(
-    #     aes(
-    #         x = change_in_days,
-    #         y = change_in_VAF,
-    #         color = Trilaciclib,
-    #         size = starting_vaf,
-    #         alpha = alpha_val
-    #     )
-    # ) +
-    ggplot(
-        aes(x = x, color = Trilaciclib, fill = Trilaciclib)
-    ) +
-    geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.2) +
-    geom_line(aes(y = y), size = 1, linetype = "dashed") +
-    geom_point(
-        data = data_to_plot,
-        aes(x = change_in_days, y = change_in_VAF, size = starting_vaf, alpha = alpha_val),
-    ) +
-    geom_segment(
-        data = data_to_plot,
-        aes(
-            x = 0,
-            y = 0,
-            xend = change_in_days,
-            yend = change_in_VAF,
-            #alpha = alpha_val
-        ),
-        alpha = 0.1,
-        size = 0.5,
-    ) +
-    scale_alpha_identity() +
-    scale_y_continuous(
-        trans = scales::pseudo_log_trans(0.001),
-        limits = \(x) {
-            c(-max(abs(x)), max(abs(x)))
-        },
-        labels = scales::percent_format(accuracy = 0.1)
-    ) +
-    #scale_x_log10() +
-    labs(
-        x = "Change in Days",
-        y = "Change in VAF",
-        color = "Trilaciclib",
-        size = "PreVAF"
-    ) +
-    panel_theme_basic +
-    scale_fill_manual(values = treatment_colors) +
-    scale_color_manual(values = treatment_colors) +
-    facet_wrap(~Gene_Class + Trilaciclib) +
-    theme(
-        axis.text.y = element_text(size = 16),
-    )
-
-# The idea is that depending on the starting VAF, the change in VAF will be different. This is a way to show that the change in VAF is dependent on the starting VAF.
-data_to_plot <- g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    #filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%
-    filter(Gene_Class == "DDR") %>%
-    # group_by(DeID, Gene) %>%
-    # slice_max(abs(change_in_VAF), n = 1) %>%
-    # ungroup() %>%
     mutate(
         starting_clone_vaf = case_when(
             preVAF < 0.005 ~ "<0.5%",
@@ -3082,7 +1463,6 @@ model_change_in_VAF_per_month <- rbind(
         formula = change_in_VAF_per_month ~ Trilaciclib + Age,
         data = data_to_plot %>%
             filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
             filter(Cohort == "SCLC")
     ) %>% sjPlot::get_model_data(type = "est") %>%
     mutate(Cohort = "SCLC"),
@@ -3090,7 +1470,6 @@ model_change_in_VAF_per_month <- rbind(
         formula = change_in_VAF_per_month ~ Trilaciclib + Age,
         data = data_to_plot %>%
             filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
             filter(Cohort == "TNBC")
     ) %>% sjPlot::get_model_data(type = "est") %>%
     mutate(Cohort = "TNBC"),
@@ -3098,7 +1477,6 @@ model_change_in_VAF_per_month <- rbind(
         formula = change_in_VAF_per_month ~ Trilaciclib + Age,
         data = data_to_plot %>%
             filter(Gene_Class == "DDR") %>%
-            filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
             filter(Cohort == "CRC")
     ) %>% sjPlot::get_model_data(type = "est") %>%
     mutate(Cohort = "CRC")
@@ -3110,7 +1488,6 @@ model_change_in_VAF <- rbind(
         formula = change_in_VAF ~ Trilaciclib + Age,
         data = data_to_plot %>%
             filter(Gene_Class == "DDR") %>%
-            #filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
             filter(Cohort == "SCLC")
     ) %>% sjPlot::get_model_data(type = "est") %>%
         mutate(Cohort = "SCLC"),
@@ -3118,7 +1495,6 @@ model_change_in_VAF <- rbind(
         formula = change_in_VAF ~ Trilaciclib + Age,
         data = data_to_plot %>%
             filter(Gene_Class == "DDR") %>%
-            #filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
             filter(Cohort == "TNBC")
     ) %>% sjPlot::get_model_data(type = "est") %>%
         mutate(Cohort = "TNBC"),
@@ -3126,7 +1502,6 @@ model_change_in_VAF <- rbind(
         formula = change_in_VAF ~ Trilaciclib + Age,
         data = data_to_plot %>%
             filter(Gene_Class == "DDR") %>%
-            #filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
             filter(Cohort == "CRC")
     ) %>% sjPlot::get_model_data(type = "est") %>%
         mutate(Cohort = "CRC")
@@ -3192,221 +1567,263 @@ data_to_plot %>%
         mean_change_in_VAF_per_month = median(change_in_VAF_per_month),
         change_in_days = median(change_in_days),
     )
-
-# Density plot of preVAF
-g1_tp %>%
-    ggplot(
-        aes(
-            x = growth_rate,
-            fill = Trilaciclib
-        )
-    ) +
-    geom_density(alpha = 0.5) +
-    scale_x_log10() +
-    labs(
-        x = "PreVAF",
-        fill = "Trilaciclib"
-    ) +
-    panel_theme_basic +
-    scale_fill_nejm() +
-    theme(
-        plot.margin = margin(1, 1, 1, 1, "cm")
-    )
-
-supp_table_3 <- g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    # filter(
-    #     case_when(
-    #         Cohort == "SCLC" ~ !(preVAF < 0.002 & postVAF < 0.002 & all_time_points == FALSE),
-    #         Cohort == "TNBC" ~ !(preVAF < 0.002 & duringVAF < 0.002 & postVAF < 0.002 & all_time_points == FALSE),
-    #         Cohort == "CRC" ~ !(preVAF < 0.002 & postVAF < 0.002 & all_time_points == FALSE),
-    #         TRUE ~ TRUE
-    #     )
-    # ) %>%
-    dplyr::select(DeID, Cohort, Trilaciclib, Gene, key, prepreVAF, preVAF, duringVAF, postVAF, postpostVAF, compare_group, change_in_days) %>%
-    mutate(
-        Timepoint_1_VAF = preVAF,
-        Timepoint_2_VAF = case_when(
-            compare_group == "PrevsPost" ~ postVAF,
-            compare_group == "C1D1vsC5D1" ~ postVAF,
-            compare_group == "C1D1vs90DPost-Maintenance" ~ postpostVAF,
-            compare_group == "C1D1vsC7D1" ~ duringVAF,
-            compare_group == "C1D1vsMaintenance" ~ postVAF
-        ),
-        change_in_days = round(change_in_days)
-    ) %>%
-    dplyr::select(-c(prepreVAF, preVAF, duringVAF, postVAF, postpostVAF, compare_group))
-
-#fwrite(supp_table_3, paste0(data_file_path, "supp_table_3.csv"))
-
 ```
 
-```{r additional-reviewer-analysis}
+# Supplemental Figure 2 - VAF >= 0.2%
+```{r supp_fig_2, fig.width=10, fig.height=10}
+# SCLC Trial
 df_to_plot <- g1_tp %>%
-    filter(
-        case_when(
-            Cohort == "Untreated" ~ compare_group == "PrevsPost",
-            Cohort == "SCLC" ~ compare_group == "C1D1vsC5D1",
-            Cohort == "CRC" ~ compare_group == "C1D1vsMaintenance",
-            Cohort == "TNBC" ~ compare_group == "C1D1vsC7D1",
-            TRUE ~ TRUE
-        )
-    ) %>%
-    mutate(
-        starting_clone_vaf = case_when(
-            preVAF < 0.005 ~ "<0.5%",
-            preVAF >= 0.005 & preVAF < 0.02 ~ "0.5-2%",
-            preVAF >= 0.02 ~ ">=2%"
-        ),
-        starting_clone_vaf = factor(starting_clone_vaf, levels = c("<0.5%", "0.5-2%", ">=2%"))
-    )
+    filter(Cohort == "SCLC" | Cohort == "Untreated") %>%    # Filter for SCLC and Untreated cohorts
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%   # Filter for DTA and DDR gene classes
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")    # Remove Inf and -Inf growth rates
 
-model_growth_rate_class_vaf <- map_dfr(c("<0.5%", "0.5-2%", ">=2%"), function(starting_vaf){
-    model_growth_rate_class_vaf <- rbind(
-        glm(
-            formula = growth_rate ~ Trilaciclib + Age,
-            data = df_to_plot %>%
-                filter(Gene_Class == "DTA") %>% 
-                filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-                filter(starting_clone_vaf == starting_vaf)
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib", 
-                term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DTA",
-            starting_clone_vaf = starting_vaf
-        ),
-        glm(
-            formula = growth_rate ~ Trilaciclib + Age,
-            data = df_to_plot %>%
-                filter(Gene_Class == "DTA") %>% 
-                filter(Trilaciclib != "Untreated") %>%
-                mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-                filter(starting_clone_vaf == starting_vaf)
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DTA",
-            starting_clone_vaf = starting_vaf
-        ),
-        glm(
-            formula = growth_rate ~ Trilaciclib + Age,
-            data = df_to_plot %>%
-                filter(Gene_Class == "DDR") %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-                filter(starting_clone_vaf == starting_vaf)
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibTrilaciclib" ~ "UntreatedVSTrilaciclib",
-                term == "TrilaciclibPlacebo" ~ "UntreatedVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DDR",
-            starting_clone_vaf = starting_vaf
-        ),
-        glm(
-            formula = growth_rate ~ Trilaciclib + Age,
-            data = df_to_plot %>%
-                filter(Gene_Class == "DDR") %>%
-                filter(Trilaciclib != "Untreated") %>%
-                mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo"))) %>%
-                filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-                filter(starting_clone_vaf == starting_vaf)
-        ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            term = case_when(
-                term == "TrilaciclibPlacebo" ~ "TrilaciclibVSPlacebo",
-                TRUE ~ term
-            ),
-            Gene_Class = "DDR",
-            starting_clone_vaf = starting_vaf
-        )
-    )
-})
-model_growth_rate_class_vaf <- model_growth_rate_class_vaf %>% 
-    filter(term == "UntreatedVSTrilaciclib" | term == "UntreatedVSPlacebo" | term == "TrilaciclibVSPlacebo")
+df_to_plot <- df_to_plot %>%
+    filter(!(preVAF < 0.002 & postVAF < 0.002))
 
-counts <- df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    #filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
-    filter(Gene_Class == "DDR") %>%
-    group_by(Trilaciclib, Gene_Class, starting_clone_vaf) %>%
-    summarise(n = n(), .groups = 'drop')
+model_growth_rate_class <- model_growth_rate_class_fun(df_to_plot)
 
-df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    #filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
-    filter(Gene_Class == "DDR") %>%
-    ggplot(
-        aes(
-            x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
-            y = growth_rate, 
-            fill = Trilaciclib              # We will still group data by Trilaciclib, but our main focus is on the Gene_Class variable.
-        )
-    ) +
-    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
-    geom_boxplot(outlier.shape = NA) +
-    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
-    geom_text(data = counts, aes(label = n, y = 0.06), size = 4, position = position_dodge(width = 0.8)) +
-    labs(
-        y = "Growth Rate", 
-        x = '', 
-        title = ""
-    ) +
-    panel_theme_basic +
-    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
-    scale_fill_manual(values = treatment_colors) +
-    facet_wrap(~starting_clone_vaf, ncol = 3) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(starting_clone_vaf == "<0.5%", Gene_Class == "DDR"), 5, 0.8, 1, model_growth_rate_class_vaf$p.value[4], model_growth_rate_class_vaf$p.stars[4], show_values = TRUE, textsize = 4)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(starting_clone_vaf == "<0.5%", Gene_Class == "DDR"), 6, 0.8, 1.2, model_growth_rate_class_vaf$p.value[5], model_growth_rate_class_vaf$p.stars[5], show_values = TRUE, textsize = 4)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(starting_clone_vaf == "<0.5%", Gene_Class == "DDR"), 7, 1, 1.2, model_growth_rate_class_vaf$p.value[6], model_growth_rate_class_vaf$p.stars[6], show_values = TRUE, textsize = 4))
-
-df_to_plot %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
-    #filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
-    filter(Gene_Class == "DDR") %>%
-    ggplot(
-        aes(
-            x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
-            y = growth_rate, 
-            fill = Trilaciclib              # We will still group data by Trilaciclib, but our main focus is on the Gene_Class variable.
-        )
-    ) +
-    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
-    geom_boxplot(outlier.shape = NA) +
-    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
-    labs(
-        y = "Growth Rate", 
-        x = '', 
-        title = ""
-    ) +
-    panel_theme_basic +
-    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
-    scale_fill_manual(values = treatment_colors)
-
+# Absolute DDR Growth Rate Calculations
 df_to_plot %>%
     filter(Gene_Class == "DDR") %>%
-    filter(Trilaciclib != "Untreated") %>%
-    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     group_by(Trilaciclib) %>%
     summarise(
         median_gr = median(growth_rate),
         average_gr = mean(growth_rate),
-    )
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
+
+counts <- df_to_plot %>%
+    group_by(Trilaciclib, Gene_Class) %>%
+    summarise(n = n(), .groups = "drop")
+
+supp_fig2a <- df_to_plot %>%
+    ggplot(
+        aes(
+            x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
+            y = growth_rate, 
+            fill = Trilaciclib              # We will still group data by Trilaciclib, but our main focus is on the Gene_Class variable.
+        )
+    ) +
+    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
+    geom_text(data = counts, aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
+    labs(
+        y = "Growth Rate", 
+        x = '', 
+        title = ""
+    ) +
+    panel_theme_basic +
+    theme(plot.margin = margin(-1, 0, -1, 0, "cm")) +
+    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
+    scale_fill_manual(values = treatment_colors) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
+supp_fig2a
+ggsave(paste0(figures_save_path, "SupplementalFigure2A.png"), plot = supp_fig2a, width = 10, height = 8, dpi = 300)
+
+# CRC Trial
+df_to_plot <- g1_tp %>% 
+    filter(Cohort == "CRC" | Cohort == "Untreated") %>%     # Filter for CRC and Untreated cohorts
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%   # Filter for DTA and DDR gene classes
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")    # Remove Inf and -Inf growth rates
+
+df_to_plot <- df_to_plot %>%
+    filter(!(preVAF < 0.002 & postVAF < 0.002))
+
+model_growth_rate_class <- model_growth_rate_class_fun(df_to_plot)
+
+# Absolute DDR Growth Rate Calculations
+df_to_plot %>%
+    filter(Gene_Class == "DDR") %>%
+    group_by(Trilaciclib) %>%
+    summarise(
+        median_gr = median(growth_rate),
+        average_gr = mean(growth_rate),
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
+
+counts <- df_to_plot %>%
+    group_by(Trilaciclib, Gene_Class) %>%
+    summarise(n = n(), .groups = "drop")
+
+supp_fig2b <- df_to_plot %>%
+    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
+    filter(Gene_Class == "DDR" | Gene_Class == "DTA") %>%       # We are filtering the data to only include the DDR and DTA gene classes.
+    ggplot(
+        aes(
+            x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
+            y = growth_rate, 
+            fill = Trilaciclib              # We will still group data by Trilaciclib, but our main focus is on the Gene_Class variable.
+        )
+    ) +
+    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
+    geom_text(data = counts, aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
+    labs(
+        y = "Growth Rate", 
+        x = '', 
+        title = ""
+    ) +
+    panel_theme_basic +
+    theme(plot.margin = margin(-1, 0, -1, 0, "cm")) +
+    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
+    scale_fill_manual(values = treatment_colors) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE)) +
+supp_fig2b
+ggsave(paste0(figures_save_path, "SupplementalFigure2B.png"), plot = supp_fig2b, width = 10, height = 8, dpi = 300)
+
+# TNBC Trial
+df_to_plot <- g1_tp %>%
+    filter(Cohort == "TNBC" | Cohort == "Untreated") %>%    # Filter for TNBC and Untreated cohorts
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%   # Filter for DTA and DDR gene classes
+    filter(growth_rate != "Inf" & growth_rate != "-Inf")    # Remove Inf and -Inf growth rates
+
+df_to_plot <- df_to_plot %>%
+    filter(!(preVAF < 0.002 & postVAF < 0.002))
+
+model_growth_rate_class <- model_growth_rate_class_fun(df_to_plot)
+
+df_to_plot %>%
+    filter(Gene_Class == "DDR") %>%
+    group_by(Trilaciclib) %>%
+    summarise(
+        median_gr = median(growth_rate),
+        average_gr = mean(growth_rate),
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
+
+counts <- df_to_plot %>%
+    group_by(Trilaciclib, Gene_Class) %>%
+    summarise(n = n(), .groups = "drop")
+
+supp_fig2c <- df_to_plot %>%
+    ggplot(
+        aes(
+            x = Gene_Class,                 # Notice how we are using the Gene_Class variable for the x-axis where before we were using Trilaciclib.
+            y = growth_rate, 
+            fill = Trilaciclib              # We will still group data by Trilaciclib, but our main focus is on the Gene_Class variable.
+        )
+    ) +
+    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
+    geom_text(data = counts, aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
+    labs(
+        y = "Growth Rate", 
+        x = '', 
+        title = ""
+    ) +
+    panel_theme_basic +
+    theme(plot.margin = margin(-1, 0, -1, 0, "cm")) +
+    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
+    scale_fill_manual(values = treatment_colors) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
+supp_fig2c
+ggsave(paste0(figures_save_path, "SupplementalFigure2C.png"), plot = supp_fig2c, width = 10, height = 8, dpi = 300)
+```
+
+# Supplemental Figure 2 - Genes Specific
+```{r supp_fig_2_genes, fig.width=10, fig.height=7}
+df_to_plot <- g1_tp %>% 
+    filter(Gene_Class == "DDR") %>%                             # Filter for DDR gene class
+    filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%    # Remove Inf and -Inf growth rates
+    mutate(Variant_Classification = if_else(VariantClass == "missense_variant", "Missense", "Nonsense"))
+
+df_to_plot <- df_to_plot %>%
+    filter(!(preVAF < 0.002 & postVAF < 0.002))
+
+model_growth_rate_gene <- purrr::cross_df(list(
+    gene = c("TP53", "PPM1D", "CHEK2"),
+    comparison = c("all", "no_untreated")
+)) %>%
+    pmap_dfr(function(gene, comparison) {
+        print(paste(gene, comparison))
+        if (comparison == "all") {
+            df_subset <- df_to_plot %>% filter(Gene == gene)
+            model <- glm(
+                formula = growth_rate ~ Trilaciclib + Age,
+                data = df_subset
+            ) %>%
+                sjPlot::get_model_data(type = "est") %>%
+                filter(!grepl("Age", term), !grepl("Cohort", term)) %>%
+                mutate(term = ifelse(term == "TrilaciclibTrilaciclib", "UntreatedVSTrilaciclib", "UntreatedVSPlacebo"))
+        } else if (comparison == "no_untreated") {
+            df_subset <- df_to_plot %>% filter(Gene == gene & Trilaciclib != "Untreated")
+            model <- glm(
+                formula = growth_rate ~ Trilaciclib + Cohort + Age,
+                data = df_subset
+            ) %>%
+                sjPlot::get_model_data(type = "est") %>%
+                filter(!grepl("Age", term), !grepl("Cohort", term)) %>%
+                mutate(term = "TrilaciclibVSPlacebo")
+        }
+        model %>% mutate(gene = gene, comparison = comparison)
+    })
+
+glm(
+    formula = growth_rate ~ Trilaciclib + Age + Cohort,
+    data = df_to_plot %>% filter(Gene == "TP53", Trilaciclib != "Untreated")
+) %>%
+    sjPlot::get_model_data(type = "est")
+
+counts_genes <- df_to_plot %>%
+    group_by(Trilaciclib, Gene) %>%
+    summarise(n = n(), .groups = "drop")
+
+supp_fig2d <- df_to_plot %>%
+    ggplot(
+        aes(
+            x = Gene,
+            y = growth_rate, 
+            fill = Trilaciclib
+        )
+    ) +
+    geom_hline(yintercept = 0, color = "black", alpha = 0.3) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_point(position = position_jitterdodge(jitter.width=0.2), alpha = 0.3) +
+    geom_text(data = counts_genes, aes(label = n, y = 0.06), size = 6, position = position_dodge(width = 0.8)) +
+    labs(
+        y = "Growth Rate", 
+        x = '', 
+        title = ""
+    ) +
+    panel_theme_basic +
+    theme(
+        plot.margin = margin(-1, 0, -1, 0, "cm")
+    ) +
+    scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
+    scale_fill_manual(values = treatment_colors) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 5, 0.75, 1, model_growth_rate_gene$p.value[1], model_growth_rate_gene$p.stars[1], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 6, 0.75, 1.25, model_growth_rate_gene$p.value[2], model_growth_rate_gene$p.stars[2], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "TP53"), 7, 1, 1.25, model_growth_rate_gene$p.value[7], model_growth_rate_gene$p.stars[7], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 5, 1.75, 2, model_growth_rate_gene$p.value[3], model_growth_rate_gene$p.stars[3], show_values = FALSE, hide_ns = FALSE)) + 
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 6, 1.75, 2.25, model_growth_rate_gene$p.value[4], model_growth_rate_gene$p.stars[4], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "PPM1D"), 7.1, 2, 2.25, model_growth_rate_gene$p.value[8], model_growth_rate_gene$p.stars[8], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 5, 2.75, 3, model_growth_rate_gene$p.value[5], model_growth_rate_gene$p.stars[5], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 6, 2.75, 3.25, model_growth_rate_gene$p.value[6], model_growth_rate_gene$p.stars[6], show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 7.1, 3, 3.25, model_growth_rate_gene$p.value[9], model_growth_rate_gene$p.stars[9], show_values = FALSE, hide_ns = FALSE)) 
+supp_fig2d
+ggsave(paste0(figures_save_path, "SupplementalFigure2D.png"), plot = supp_fig2d, width = 10, height = 8, dpi = 300)
 ```

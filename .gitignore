@@ -1,0 +1,27 @@
+# Ignore Analysis Code not used in Paper
+AnalysisCodeNotInPaper.Rmd
+CDK46_MoChA.r
+GrowthRateCheck.r
+BioinformaticsFig4_Validation.Rmd
+data/cdk46_ch_pilot_harvard.csv
+
+# Ignore RAW or Unprocessed Data
+Figures.pptx
+figures/
+G1_Samples.csv
+data/G1_demog.csv
+data/OldData/
+data/RawData/
+data/g1 Tables_GP.xlsx
+data/g1_mocha_events.csv
+data/g1_mocha_events.xlsx
+data/supp_table_3.csv
+extra_raw_data/
+
+# Ignore SRA Upload Information
+data/SRA_Upload_BioSample_Attributes.tsv
+data/g1_sra_extra_columns_Carlos.csv
+
+# Ignore DS_Store
+*.DS_Store
+

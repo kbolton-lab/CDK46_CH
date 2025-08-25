@@ -105,3 +105,65 @@ time_points <- function(variant, ignore_noise = TRUE, rescue = TRUE) {
 
     return(res)
 }
+
+# Functions to Process Timepoints AFTER the above
+timepoints_to_columns <- function(df) {
+    df %>%
+      separate(result, c("all_time_points", "prepreVAF_original", "preVAF_original", "duringVAF_original", "postVAF_original", "postpostVAF_original", "extra_tp_original",
+                     "prepreVAF_ignore_noise", "preVAF_ignore_noise", "duringVAF_ignore_noise", "postVAF_ignore_noise", "postpostVAF_ignore_noise", "extra_tp_ignore_noise", 
+                     "prepreVAF_rescue", "preVAF_rescue", "duringVAF_rescue", "postVAF_rescue", "postpostVAF_rescue", "extra_tp_rescue",
+                     "rescued", "missing", "called", "at_limit"), sep = " ", extra = "merge", fill = "right") %>%
+  select(-extra_tp_original, -extra_tp_ignore_noise, -extra_tp_rescue) %>%
+  mutate_if(is.character, ~na_if(., "NA"))
+}
+
+timepoints_set_vaf <- function(timepoints_df, limit_of_detection = FALSE) {
+    # 1. Set the VAFs to the original caller VAFs
+    timepoints_df <- timepoints_df %>%
+      mutate(
+        prepreVAF_original = as.numeric(prepreVAF_original),
+        preVAF_original = as.numeric(preVAF_original),
+        duringVAF_original = as.numeric(duringVAF_original),
+        postVAF_original = as.numeric(postVAF_original),
+        postpostVAF_original = as.numeric(postpostVAF_original),
+        prepreVAF = as.numeric(prepreVAF_original),
+        preVAF = as.numeric(preVAF_original),
+        duringVAF = as.numeric(duringVAF_original),
+        postVAF = as.numeric(postVAF_original),
+        postpostVAF = as.numeric(postpostVAF_original),
+      )
+    # 2. If the variant can be rescued, we will use the rescued VAFs
+    # 2a. We need to change the VAFs to the rescued VAFs if the variant was rescued (apples to oranges)
+    timepoints_df <- timepoints_df %>%
+        mutate(
+            prepreVAF = ifelse(rescued == "true", as.numeric(prepreVAF_rescue), prepreVAF),
+            preVAF = ifelse(rescued == "true", as.numeric(preVAF_rescue), preVAF),
+            duringVAF = ifelse(rescued == "true", as.numeric(duringVAF_rescue), duringVAF),
+            postVAF = ifelse(rescued == "true", as.numeric(postVAF_rescue), postVAF),
+            postpostVAF = ifelse(rescued == "true", as.numeric(postpostVAF_rescue), postpostVAF)
+        )
+    
+    # 3. If the variant was NOT rescuable, we have an option to explore the limit of detection
+    if (limit_of_detection) {
+        timepoints_df <- timepoints_df %>%
+            mutate(
+                prepreVAF = ifelse(is.na(prepreVAF), as.numeric(prepreVAF_ignore_noise), prepreVAF),
+                preVAF = ifelse(is.na(preVAF), as.numeric(preVAF_ignore_noise), preVAF),
+                duringVAF = ifelse(is.na(duringVAF), as.numeric(duringVAF_ignore_noise), duringVAF),
+                postVAF = ifelse(is.na(postVAF), as.numeric(postVAF_ignore_noise), postVAF),
+                postpostVAF = ifelse(is.na(postpostVAF), as.numeric(postpostVAF_ignore_noise), postpostVAF)
+            )
+    }
+
+    # 4. Finally, we set all NA values to 0
+    timepoints_df <- timepoints_df %>%
+        mutate(
+            prepreVAF = ifelse(is.na(prepreVAF), 0, prepreVAF),
+            preVAF = ifelse(is.na(preVAF), 0, preVAF),
+            duringVAF = ifelse(is.na(duringVAF), 0, duringVAF),
+            postVAF = ifelse(is.na(postVAF), 0, postVAF),
+            postpostVAF = ifelse(is.na(postpostVAF), 0, postpostVAF)
+        )
+
+    return(timepoints_df)
+}

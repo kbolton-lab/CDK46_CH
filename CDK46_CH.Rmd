@@ -27,7 +27,6 @@ library(tidyverse)
 library(data.table)
 library(table1)
 library(ggpubr)
-#library(ggthemr)
 library(ComplexHeatmap)
 library(ggsci)
 library(ggsignif)
@@ -43,8 +42,6 @@ library(conflicted)
 conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::filter)
 
-#source("CDK46_CH/utils/toolbox.R")
-#source("CDK46_CH/utils/timepoints_function.R")
 source("utils/custom_lollipop.r")
 
 data_file_path <- "data/"
@@ -478,8 +475,6 @@ df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
     )
 #fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.names = FALSE)
 
-library(ComplexHeatmap)
-library(ggsci)
 nejmPal <- pal_nejm("default")(8)
 col <- nejmPal[1:6]
 names(col) <- c("Multi mutation", "Frameshift", "Missense", "Nonsense", "Splicing", "Other")
@@ -597,8 +592,8 @@ p <- oncoPrint(mat,
         Cohort = colInfor$Cohort,
         Treatment = colInfor$Trilaciclib,
         col = list(
-            Cohort = c(`Healthy Control` = col[1], `SCLC Pre-Treatment` = col[2]),
-            Treatment = c(Untreated = col[1], Trilaciclib = col[2], Placebo = col[3])
+            Cohort = c(`Healthy Control` = nejmPal[1], `SCLC Pre-Treatment` = nejmPal[2]),
+            Treatment = c(Untreated = nejmPal[1], Trilaciclib = nejmPal[2], Placebo = nejmPal[3])
         ),
         annotation_legend_param = list(
             Cohort = list(
@@ -1596,55 +1591,27 @@ data_to_plot <- g1_tp %>%
 # Statistics
 model_change_in_VAF_per_month <- rbind(
     glm(
-        formula = change_in_VAF_per_month ~ Trilaciclib + Age,
-        data = data_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Cohort == "SCLC")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(Cohort = "SCLC"),
+        formula = change_in_VAF_per_month ~ Trilaciclib + Age + starting_clone_vaf,
+        data = data_to_plot %>% filter(Gene_Class == "DDR")
+    ) %>% sjPlot::get_model_data(type = "est"),
     glm(
-        formula = change_in_VAF_per_month ~ Trilaciclib + Age,
-        data = data_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Cohort == "TNBC")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(Cohort = "TNBC"),
-    glm(
-        formula = change_in_VAF_per_month ~ Trilaciclib + Age,
-        data = data_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Cohort == "CRC")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-    mutate(Cohort = "CRC")
-)
-model_change_in_VAF_per_month <- model_change_in_VAF_per_month %>% filter(term == "TrilaciclibPlacebo")
+        formula = change_in_VAF_per_month ~ Trilaciclib + Age + starting_clone_vaf,
+        data = data_to_plot %>% filter(Gene_Class == "DDR") %>% filter(Cohort != "Untreated")
+    ) %>% sjPlot::get_model_data(type = "est")
+) %>% filter(grepl("Trilaciclib", term))
 
 model_change_in_VAF <- rbind(
     glm(
-        formula = change_in_VAF ~ Trilaciclib + Age,
-        data = data_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Cohort == "SCLC")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(Cohort = "SCLC"),
+        formula = change_in_VAF ~ Trilaciclib + Age + starting_clone_vaf,
+        data = data_to_plot %>% filter(Gene_Class == "DDR")
+    ) %>% sjPlot::get_model_data(type = "est"),
     glm(
-        formula = change_in_VAF ~ Trilaciclib + Age,
-        data = data_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Cohort == "TNBC")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(Cohort = "TNBC"),
-    glm(
-        formula = change_in_VAF ~ Trilaciclib + Age,
-        data = data_to_plot %>%
-            filter(Gene_Class == "DDR") %>%
-            filter(Cohort == "CRC")
-    ) %>% sjPlot::get_model_data(type = "est") %>%
-        mutate(Cohort = "CRC")
-)
-model_change_in_VAF <- model_change_in_VAF %>% filter(term == "TrilaciclibPlacebo")
+        formula = change_in_VAF ~ Trilaciclib + Age + starting_clone_vaf,
+        data = data_to_plot %>% filter(Gene_Class == "DDR") %>% filter(Cohort != "Untreated")
+    ) %>% sjPlot::get_model_data(type = "est")
+) %>% filter(grepl("Trilaciclib", term))
 
-data_to_plot %>%
+supp_fig1 <- data_to_plot %>%
     ggplot(
         aes(
             x = Trilaciclib,
@@ -1687,13 +1654,15 @@ data_to_plot %>%
     guides(
         color = guide_legend(title.position = "top", title = "Drug Treatment"),
         size = guide_legend(title.position = "top")
-    )
-    # do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "SCLC"), 6, 1.8, 2.2, model_change_in_VAF$p.value[1], model_change_in_VAF$p.stars[1], show_values = TRUE)) +
-    # do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "TNBC"), 7, 2.8, 3.2, model_change_in_VAF$p.value[2], model_change_in_VAF$p.stars[2], show_values = TRUE)) +
-    # do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "CRC"), 8, 3.8, 4.2, model_change_in_VAF$p.value[3], model_change_in_VAF$p.stars[3], show_values = TRUE))
-    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "SCLC"), 6, 1, 2, model_change_in_VAF_per_month$p.value[1], model_change_in_VAF_per_month$p.stars[1], show_values = TRUE)) +
-    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "TNBC"), 7, 1, 3, model_change_in_VAF_per_month$p.value[2], model_change_in_VAF_per_month$p.stars[2], show_values = TRUE)) +
-    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "CRC"), 8, 2.8, 3.2, model_change_in_VAF_per_month$p.value[3], model_change_in_VAF_per_month$p.stars[3], show_values = TRUE))
+    ) +
+    do.call(geom_signif, default_sig_data(data_to_plot, 5.5, 1, 2, model_change_in_VAF_per_month$p.value[1], model_change_in_VAF_per_month$p.stars[1], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(data_to_plot, 6.5, 1, 3, model_change_in_VAF_per_month$p.value[2], model_change_in_VAF_per_month$p.stars[2], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(data_to_plot, 7.5, 2, 3, model_change_in_VAF_per_month$p.value[3], model_change_in_VAF_per_month$p.stars[3], show_values = FALSE))
+    # do.call(geom_signif, default_sig_data(data_to_plot, 6, 1, 2, model_change_in_VAF$p.value[1], model_change_in_VAF$p.stars[1], show_values = TRUE)) +
+    # do.call(geom_signif, default_sig_data(data_to_plot, 7, 1, 3, model_change_in_VAF$p.value[2], model_change_in_VAF$p.stars[2], show_values = TRUE)) +
+    # do.call(geom_signif, default_sig_data(data_to_plot, 8, 2, 3, model_change_in_VAF$p.value[3], model_change_in_VAF$p.stars[3], show_values = TRUE))
+supp_fig1
+ggsave(paste0(figures_save_path, "SupplementalFigure1.png"), plot = supp_fig1, width = 10, height = 8, dpi = 300)
 
 data_to_plot %>%
     ungroup() %>%

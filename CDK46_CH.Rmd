@@ -485,7 +485,8 @@ fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.na
 
 library(ComplexHeatmap)
 library(ggsci)
-col <- pal_nejm("default")(6)
+nejmPal <- pal_nejm("default")(8)
+col <- nejmPal[1:6]
 names(col) <- c("Multi mutation", "Frameshift", "Missense", "Nonsense", "Splicing", "Other")
 
 # Function to define colors for alteration cells

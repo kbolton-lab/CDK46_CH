@@ -28,6 +28,7 @@ library(data.table)
 library(table1)
 library(ggpubr)
 #library(ggthemr)
+library(ComplexHeatmap)
 library(ggsci)
 library(ggsignif)
 library(cowplot)
@@ -44,10 +45,10 @@ conflicts_prefer(dplyr::filter)
 
 #source("CDK46_CH/utils/toolbox.R")
 #source("CDK46_CH/utils/timepoints_function.R")
-source("CDK46_CH/utils/custom_lollipop.R")
+source("utils/custom_lollipop.r")
 
-data_file_path <- "CDK46_CH/data/"
-figures_save_path <- "CDK46_CH/figures/"
+data_file_path <- "data/"
+figures_save_path <- "figures/"
 ```
 
 ```{r load_data, include=TRUE, message = FALSE, warning = FALSE}
@@ -410,12 +411,6 @@ g1_mut_table %>%
     summarise(n_ch = sum(CH_Binary), n_total = n())
 ```
 
-# Figure 1a - SCLC Schematic
-```{r fig1, fig.width=12, fig.height=18}
-fig1a <- ggdraw() + draw_image(sclc_schematic)
-fig1a
-```
-
 # Figure 1B - Ribbon Plot
 ```{r fig1b, fig.width=7.6, fig.height=7}
 fig1b <- g1_mut_table %>%
@@ -481,7 +476,7 @@ df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
         ),
         stringsAsFactors = FALSE
     )
-fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.names = FALSE)
+#fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.names = FALSE)
 
 library(ComplexHeatmap)
 library(ggsci)
@@ -602,8 +597,8 @@ p <- oncoPrint(mat,
         Cohort = colInfor$Cohort,
         Treatment = colInfor$Trilaciclib,
         col = list(
-            Cohort = c(`Healthy Control` = nejmPal[1], `SCLC Pre-Treatment` = nejmPal[2]),
-            Treatment = c(Untreated = nejmPal[1], Trilaciclib = nejmPal[2], Placebo = nejmPal[3])
+            Cohort = c(`Healthy Control` = col[1], `SCLC Pre-Treatment` = col[2]),
+            Treatment = c(Untreated = col[1], Trilaciclib = col[2], Placebo = col[3])
         ),
         annotation_legend_param = list(
             Cohort = list(
@@ -1696,9 +1691,9 @@ data_to_plot %>%
     # do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "SCLC"), 6, 1.8, 2.2, model_change_in_VAF$p.value[1], model_change_in_VAF$p.stars[1], show_values = TRUE)) +
     # do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "TNBC"), 7, 2.8, 3.2, model_change_in_VAF$p.value[2], model_change_in_VAF$p.stars[2], show_values = TRUE)) +
     # do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "CRC"), 8, 3.8, 4.2, model_change_in_VAF$p.value[3], model_change_in_VAF$p.stars[3], show_values = TRUE))
-    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "SCLC"), 6, 1.8, 2.2, model_change_in_VAF_per_month$p.value[1], model_change_in_VAF_per_month$p.stars[1], show_values = TRUE)) +
-    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "TNBC"), 7, 2.8, 3.2, model_change_in_VAF_per_month$p.value[2], model_change_in_VAF_per_month$p.stars[2], show_values = TRUE)) +
-    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "CRC"), 8, 3.8, 4.2, model_change_in_VAF_per_month$p.value[3], model_change_in_VAF_per_month$p.stars[3], show_values = TRUE))
+    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "SCLC"), 6, 1, 2, model_change_in_VAF_per_month$p.value[1], model_change_in_VAF_per_month$p.stars[1], show_values = TRUE)) +
+    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "TNBC"), 7, 1, 3, model_change_in_VAF_per_month$p.value[2], model_change_in_VAF_per_month$p.stars[2], show_values = TRUE)) +
+    do.call(geom_signif, default_sig_data(data_to_plot %>% filter(Cohort == "CRC"), 8, 2.8, 3.2, model_change_in_VAF_per_month$p.value[3], model_change_in_VAF_per_month$p.stars[3], show_values = TRUE))
 
 data_to_plot %>%
     ungroup() %>%

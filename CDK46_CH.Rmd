@@ -46,7 +46,6 @@ conflicts_prefer(dplyr::filter)
 source("utils/custom_lollipop.r")
 
 data_file_path <- "data/"
-re_data_file_path <- "reprocessed/"
 figures_save_path <- "figures/"
 ```
 
@@ -55,7 +54,7 @@ figures_save_path <- "figures/"
 sclc_df <- fread(paste0(data_file_path, "sclc_df.minimum.csv"))                       # Small Cell Lung Cancer
 tnbc_df <- fread(paste0(data_file_path, "tnbc_df.minimum.csv"))                       # Triple Negative Breast Cancer
 crc_df <- fread(paste0(data_file_path, "crc_df.minimum.csv"))                         # Colorectal Cancer
-untreated_df <- fread(paste0(re_data_file_path, "untreated_df.minimum.csv"))                # Untreated
+untreated_df <- fread(paste0(data_file_path, "untreated_df.minimum.csv"))                # Untreated
 
 g1_df <- rbind(
     sclc_df %>% mutate(Cohort = "SCLC") %>% mutate(DeID = as.character(DeID)), 
@@ -1894,7 +1893,7 @@ ggsave(paste0(figures_save_path, "SupplementalFigure2D.png"), plot = supp_fig2d,
 # Calculate Pearson correlation for all points
 pearson_corr <- cor(bio_fig4_data$rep1, bio_fig4_data$rep2, use = "complete.obs", method = "pearson")
 
-axis_ticks <- c(0.0001, 0.0003, 0.0005, 0.001, 0.0020, 0.005, 0.01, 0.020, 0.05, 0.1)
+axis_ticks <- c(0.0001, 0.0002, 0.0005, 0.001, 0.0020, 0.005, 0.01, 0.020, 0.05, 0.1)
 
 supp_fig3 <- bio_fig4_data %>%
     mutate(
@@ -1920,7 +1919,7 @@ supp_fig3 <- bio_fig4_data %>%
     coord_fixed(clip = "off") +
     geom_abline(linetype = "dashed") +
     labs(
-        title = "Replicate Correlation of CH VAFs < 10%",
+        title = "",
         color = "Reason", 
         x = "Replicate 1 - VAF",
         y = "Replicate 2 - VAF"

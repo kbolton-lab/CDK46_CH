@@ -37,6 +37,7 @@ library(sjPlot)
 library(readxl)
 library(maftools)
 library(purrr)
+library(RColorBrewer)
 
 library(conflicted)
 conflicts_prefer(dplyr::select)
@@ -45,6 +46,7 @@ conflicts_prefer(dplyr::filter)
 source("utils/custom_lollipop.r")
 
 data_file_path <- "data/"
+re_data_file_path <- "reprocessed/"
 figures_save_path <- "figures/"
 ```
 
@@ -53,7 +55,7 @@ figures_save_path <- "figures/"
 sclc_df <- fread(paste0(data_file_path, "sclc_df.minimum.csv"))                       # Small Cell Lung Cancer
 tnbc_df <- fread(paste0(data_file_path, "tnbc_df.minimum.csv"))                       # Triple Negative Breast Cancer
 crc_df <- fread(paste0(data_file_path, "crc_df.minimum.csv"))                         # Colorectal Cancer
-untreated_df <- fread(paste0(data_file_path, "untreated_df.minimum.csv"))                # Untreated
+untreated_df <- fread(paste0(re_data_file_path, "untreated_df.minimum.csv"))                # Untreated
 
 g1_df <- rbind(
     sclc_df %>% mutate(Cohort = "SCLC") %>% mutate(DeID = as.character(DeID)), 
@@ -67,10 +69,10 @@ tnbc_schematic <- paste0(data_file_path, "G1_TNBC.png")
 crc_schematic <- paste0(data_file_path, "G1_CRC.png")
 
 # Timepoints Dataframe
-sclc_tp <- fread(paste0(data_file_path, "sclc_timepoints.minimum.csv"))                  # Small Cell Lung Cancer
-tnbc_tp <- fread(paste0(data_file_path, "tnbc_timepoints.minimum.csv"))                  # Triple Negative Breast Cancer
-crc_tp <- fread(paste0(data_file_path, "crc_timepoints.minimum.csv"))                    # Colorectal Cancer
-untreated_tp <- fread(paste0(data_file_path, "untreated_timepoints.minimum.csv"))          # Untreated
+sclc_tp <- fread(paste0(data_file_path, "sclc_timepoints.under17000.minimum.csv"))                  # Small Cell Lung Cancer
+tnbc_tp <- fread(paste0(data_file_path, "tnbc_timepoints.under17000.minimum.csv"))                  # Triple Negative Breast Cancer
+crc_tp <- fread(paste0(data_file_path, "crc_timepoints.under17000.minimum.csv"))                    # Colorectal Cancer
+untreated_tp <- fread(paste0(data_file_path, "untreated_timepoints.minimum.csv"))                    # Untreated
 
 g1_tp <- rbind(
     sclc_tp %>% mutate(Cohort = if_else(Trilaciclib == "Untreated", "Untreated", "SCLC")), 
@@ -83,28 +85,24 @@ g1_demo <- fread(paste0(data_file_path, "g1_demo.csv"))
 
 # Blood Counts Lab Results
 g1_lab <- fread(paste0(data_file_path, "g1_labresults.csv"))
+
+# Bioinformatics Figure 4 Validation Data
+bio_fig4_data <- fread(paste0(data_file_path, "cdk46_ch_pilot_harvard.filtered.csv"))
 ```
 
 # Check that all Timepoints Variants are IN the Dataframe and vice versa
 ```{r check_timepoints, include=TRUE, message = FALSE, warning = FALSE}
+# All of the timepoint variants exist within the CH calls
 setdiff(
-    g1_tp %>%
-        select(DeID, key),
-    g1_df %>%
-        filter(key != "") %>%
-        select(DeID, key) %>%
-        distinct()
+    g1_tp %>% select(DeID, key, Cohort),
+    g1_df %>% filter(key != "") %>% select(DeID, key, Cohort) %>% distinct()
 )
 
+# 141 CH Call variants are not analyzed because they may be noise due to low sequencing depths (17k)
 setdiff(
-    g1_df %>%
-        filter(key != "") %>%
-        select(DeID, key) %>%
-        distinct(),
-    g1_tp %>%
-        select(DeID, key) %>%
-        distinct()
-)
+    g1_df %>% filter(key != "") %>% select(DeID, key, Cohort) %>% distinct(),
+    g1_tp %>% select(DeID, key, Cohort) %>% distinct()
+) %>% select(Cohort) %>% table()
 ```
 
 # Table 1
@@ -342,12 +340,8 @@ g1_tp <- g1_tp %>%
         )
     )
 
-# Removing Samples with Low Sequencing Depths (May give inaccurate results)
-low_depth_deid <- c("1163006", "1148005", "1114002", "1131013", "1117006", "2022-3022", "2028-3011", "2009-3003", "2810-3003", "2405-3002", "2703-3002")
-g1_df <- g1_df %>%
-    filter(!(DeID %in% low_depth_deid))
-g1_tp <- g1_tp %>%
-    filter(!(DeID %in% low_depth_deid))
+# These are the timepoints that we will be using for analysis
+table(g1_tp$compare_group, g1_tp$Cohort)
 
 # Even though Timepoints already has Growth Rate, we will calculate it again to ensure consistency
 g1_tp %>%
@@ -385,6 +379,7 @@ num_mutations_per_person <- g1_df %>%
     filter(average_AF >= 0.002) %>%                             # Anything less than this may be noise.
     group_by(DeID, Gene, Trilaciclib, whichdraw) %>%
     summarise(n = sum(putative_driver)) %>%
+    filter(Gene != "") %>%
     #mutate(Gene = ifelse(Gene == "", "No Mutation", Gene)) %>%
     pivot_wider(names_from = Gene, values_from = n, values_fill = 0) %>%
     ungroup() #%>%
@@ -852,7 +847,7 @@ fig1e_cont <- g1_mut_table %>%
     scale_y_continuous(labels = scales::percent, limits = c(NA, 0.75), expand = c(0, 0)) +
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig(0.65, 0.75, 1.25, model_treatment_gene_class$p.value[1], model_treatment_gene_class$p.stars[1], show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig(0.65, 1.75, 2.25, model_treatment_gene_class$p.value[2], model_treatment_gene_class$p.stars[2], show_values = FALSE))
+    do.call(geom_signif, default_sig(0.65, 1.75, 2.25, model_treatment_gene_class$p.value[2], model_treatment_gene_class$p.stars[2], show_values = FALSE, hide_ns = FALSE))
 fig1e_cont
 ggsave(paste0(figures_save_path, "Figure1E_Continued.png"), plot = fig1e_cont, width = 10, height = 6, dpi = 300)
 ```
@@ -904,10 +899,10 @@ fig1f <- df_to_plot %>%
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
-    #do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
-    #do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
-    #do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
 fig1f
 ggsave(paste0(figures_save_path, "Figure1F.png"), plot = fig1f, width = 12, height = 10, dpi = 300)
 ```
@@ -1015,10 +1010,10 @@ fig2d <- df_to_plot %>%
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
 fig2d
 ggsave(paste0(figures_save_path, "Figure2D.png"), plot = fig2d, width = 12, height = 8, dpi = 300)
 ```
@@ -1272,19 +1267,12 @@ ext_fig_tp53_bubble <- df_to_plot_ddr %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     filter(Gene == "TP53") %>%
     mutate(
-        # size_bin = case_when(
-        #     CosmicCount < 10 ~ "0-10",
-        #     CosmicCount >= 10 & CosmicCount < 50 ~ "10-50",
-        #     CosmicCount >= 50 & CosmicCount < 100 ~ "50-100",
-        #     CosmicCount >= 100 ~ ">100"
-        # ),
         size_bin = case_when(
             heme_cosmic_count < 10 ~ "0-10",
             heme_cosmic_count >= 10 & heme_cosmic_count < 25 ~ "10-25",
             heme_cosmic_count >= 25 & heme_cosmic_count < 50 ~ "25-50",
             heme_cosmic_count >= 50 ~ ">50"
         ),
-        #size_bin = factor(size_bin, levels = c("0-10", "10-50", "50-100", ">100")),
         size_bin = factor(size_bin, levels = c("0-10", "10-25", "25-50", ">50"))
     ) %>%
     ggplot(
@@ -1297,7 +1285,6 @@ ext_fig_tp53_bubble <- df_to_plot_ddr %>%
         )
     ) +
     geom_point(alpha = 0.7) +
-    #scale_size_manual(values = c("0-10"= 6, "10-50"=8, "50-100"= 10, ">100"= 12)) +
     scale_size_manual(values = c("0-10"= 6, "10-25"=8, "25-50"= 10, ">50"= 12)) +
     scale_shape_manual(values = c("Missense" = 16, "Frameshift" = 17, "Splicing" = 18, "Nonsense" = 15, "Synonymous" = 1, "Other" = 2)) +
     panel_theme_basic +
@@ -1332,19 +1319,12 @@ ext_fig_ppm1d_bubble <- df_to_plot_ddr %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     filter(Gene == "PPM1D") %>%
     mutate(
-        # size_bin = case_when(
-        #     CosmicCount < 10 ~ "0-10",
-        #     CosmicCount >= 10 & CosmicCount < 50 ~ "10-50",
-        #     CosmicCount >= 50 & CosmicCount < 100 ~ "50-100",
-        #     CosmicCount >= 100 ~ ">100"
-        # ),
         size_bin = case_when(
             heme_cosmic_count < 10 ~ "0-10",
             heme_cosmic_count >= 10 & heme_cosmic_count < 25 ~ "10-25",
             heme_cosmic_count >= 25 & heme_cosmic_count < 50 ~ "25-50",
             heme_cosmic_count >= 50 ~ ">50"
         ),
-        #size_bin = factor(size_bin, levels = c("0-10", "10-50", "50-100", ">100")),
         size_bin = factor(size_bin, levels = c("0-10", "10-25", "25-50", ">50"))
     ) %>%
     ggplot(
@@ -1357,7 +1337,6 @@ ext_fig_ppm1d_bubble <- df_to_plot_ddr %>%
         )
     ) +
     geom_point(alpha = 0.7) +
-    #scale_size_manual(values = c("0-10"= 6, "10-50"=8, "50-100"= 10, ">100"= 12)) +
     scale_size_manual(values = c("0-10"= 6, "10-25"=8, "25-50"= 10, ">50"= 12)) +
     scale_shape_manual(values = c("Missense" = 16, "Frameshift" = 17, "Splicing" = 18, "Nonsense" = 15, "Synonymous" = 1, "Other" = 2)) +
     panel_theme_basic +
@@ -1383,19 +1362,12 @@ ext_fig_chek2_bubble <- df_to_plot_ddr %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
     filter(Gene == "CHEK2") %>%
     mutate(
-        # size_bin = case_when(
-        #     CosmicCount < 10 ~ "0-10",
-        #     CosmicCount >= 10 & CosmicCount < 50 ~ "10-50",
-        #     CosmicCount >= 50 & CosmicCount < 100 ~ "50-100",
-        #     CosmicCount >= 100 ~ ">100"
-        # ),
         size_bin = case_when(
             heme_cosmic_count < 10 ~ "0-10",
             heme_cosmic_count >= 10 & heme_cosmic_count < 25 ~ "10-25",
             heme_cosmic_count >= 25 & heme_cosmic_count < 50 ~ "25-50",
             heme_cosmic_count >= 50 ~ ">50"
         ),
-        #size_bin = factor(size_bin, levels = c("0-10", "10-50", "50-100", ">100")),
         size_bin = factor(size_bin, levels = c("0-10", "10-25", "25-50", ">50"))
     ) %>%
     ggplot(
@@ -1408,7 +1380,6 @@ ext_fig_chek2_bubble <- df_to_plot_ddr %>%
         )
     ) +
     geom_point(alpha = 0.7) +
-    #scale_size_manual(values = c("0-10"= 6, "10-50"=8, "50-100"= 10, ">100"= 12)) +
     scale_size_manual(values = c("0-10"= 6, "10-25"=8, "25-50"= 10, ">50"= 12)) +
     scale_shape_manual(values = c("Missense" = 16, "Frameshift" = 17, "Splicing" = 18, "Nonsense" = 15, "Synonymous" = 1, "Other" = 2)) +
     panel_theme_basic +
@@ -1439,7 +1410,7 @@ g1_df %>%
     mutate(Gene = factor(Gene, levels = gene_list)) %>%
     select(key, Gene) %>%
     distinct() %>%
-    arrange(Gene) %>%
+    arrange(Gene) %>% 
     write.csv(paste0(figures_save_path, "SupplementaryTable1_CH_Mutations.csv"), row.names = FALSE)
 ```
 
@@ -1558,7 +1529,20 @@ model_change_in_prop_blood_counts_gene_class
 ```{r supp_fig1, fig.width=10, fig.height=10}
 data_to_plot <- g1_tp %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
+    filter(Gene_Class == "DDR")
+
+data_to_plot %>%
     filter(Gene_Class == "DDR") %>%
+    group_by(Trilaciclib) %>%
+    summarise(
+        median_gr = median(growth_rate),
+        average_gr = mean(growth_rate),
+    ) %>%
+    pivot_wider(names_from = Trilaciclib, values_from = c(median_gr, average_gr)) %>%
+    mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
+    select(perc_reduction)
+
+data_to_plot <- data_to_plot %>%
     group_by(DeID, Gene) %>%
     slice_max(abs(change_in_VAF), n = 1) %>%
     ungroup() %>%
@@ -1588,28 +1572,6 @@ data_to_plot <- g1_tp %>%
         change_in_VAF_per_month = change_in_VAF / change_in_months,
         change_in_VAF_per_day = change_in_VAF / change_in_days,
     )
-# Statistics
-model_change_in_VAF_per_month <- rbind(
-    glm(
-        formula = change_in_VAF_per_month ~ Trilaciclib + Age + starting_clone_vaf,
-        data = data_to_plot %>% filter(Gene_Class == "DDR")
-    ) %>% sjPlot::get_model_data(type = "est"),
-    glm(
-        formula = change_in_VAF_per_month ~ Trilaciclib + Age + starting_clone_vaf,
-        data = data_to_plot %>% filter(Gene_Class == "DDR") %>% filter(Cohort != "Untreated")
-    ) %>% sjPlot::get_model_data(type = "est")
-) %>% filter(grepl("Trilaciclib", term))
-
-model_change_in_VAF <- rbind(
-    glm(
-        formula = change_in_VAF ~ Trilaciclib + Age + starting_clone_vaf,
-        data = data_to_plot %>% filter(Gene_Class == "DDR")
-    ) %>% sjPlot::get_model_data(type = "est"),
-    glm(
-        formula = change_in_VAF ~ Trilaciclib + Age + starting_clone_vaf,
-        data = data_to_plot %>% filter(Gene_Class == "DDR") %>% filter(Cohort != "Untreated")
-    ) %>% sjPlot::get_model_data(type = "est")
-) %>% filter(grepl("Trilaciclib", term))
 
 supp_fig1 <- data_to_plot %>%
     ggplot(
@@ -1654,13 +1616,7 @@ supp_fig1 <- data_to_plot %>%
     guides(
         color = guide_legend(title.position = "top", title = "Drug Treatment"),
         size = guide_legend(title.position = "top")
-    ) +
-    do.call(geom_signif, default_sig_data(data_to_plot, 5.5, 1, 2, model_change_in_VAF_per_month$p.value[1], model_change_in_VAF_per_month$p.stars[1], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(data_to_plot, 6.5, 1, 3, model_change_in_VAF_per_month$p.value[2], model_change_in_VAF_per_month$p.stars[2], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(data_to_plot, 7.5, 2, 3, model_change_in_VAF_per_month$p.value[3], model_change_in_VAF_per_month$p.stars[3], show_values = FALSE))
-    # do.call(geom_signif, default_sig_data(data_to_plot, 6, 1, 2, model_change_in_VAF$p.value[1], model_change_in_VAF$p.stars[1], show_values = TRUE)) +
-    # do.call(geom_signif, default_sig_data(data_to_plot, 7, 1, 3, model_change_in_VAF$p.value[2], model_change_in_VAF$p.stars[2], show_values = TRUE)) +
-    # do.call(geom_signif, default_sig_data(data_to_plot, 8, 2, 3, model_change_in_VAF$p.value[3], model_change_in_VAF$p.stars[3], show_values = TRUE))
+    )
 supp_fig1
 ggsave(paste0(figures_save_path, "SupplementalFigure1.png"), plot = supp_fig1, width = 10, height = 8, dpi = 300)
 
@@ -1670,7 +1626,7 @@ data_to_plot %>%
     summarise(
         mean_change_in_VAF = median(change_in_VAF),
         mean_change_in_VAF_per_month = median(change_in_VAF_per_month),
-        change_in_days = median(change_in_days),
+        change_in_days = median(change_in_days)
     )
 ```
 
@@ -1726,10 +1682,10 @@ supp_fig2a <- df_to_plot %>%
     scale_fill_manual(values = treatment_colors) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = FALSE)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = FALSE))
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE)) +
+    # do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DTA"), 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE))
 supp_fig2a
 ggsave(paste0(figures_save_path, "SupplementalFigure2A.png"), plot = supp_fig2a, width = 10, height = 8, dpi = 300)
 
@@ -1931,4 +1887,65 @@ supp_fig2d <- df_to_plot %>%
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "CHEK2"), 7.1, 3, 3.25, model_growth_rate_gene$p.value[9], model_growth_rate_gene$p.stars[9], show_values = FALSE, hide_ns = FALSE)) 
 supp_fig2d
 ggsave(paste0(figures_save_path, "SupplementalFigure2D.png"), plot = supp_fig2d, width = 10, height = 8, dpi = 300)
+```
+
+# Supplemental Figure 3 - Bioinformatics Figure 4 Validation
+```{r supp_fig_3, fig.width=10, fig.height=7}
+# Calculate Pearson correlation for all points
+pearson_corr <- cor(bio_fig4_data$rep1, bio_fig4_data$rep2, use = "complete.obs", method = "pearson")
+
+axis_ticks <- c(0.0001, 0.0003, 0.0005, 0.001, 0.0020, 0.005, 0.01, 0.020, 0.05, 0.1)
+
+supp_fig3 <- bio_fig4_data %>%
+    mutate(
+        depth_bin = case_when(
+            average_depth_1 < 15000 | average_depth_2 < 15000 ~ "<15k",
+            (average_depth_1 >= 15000 & average_depth_1 < 16000) | (average_depth_2 >= 15000 & average_depth_2 < 16000) ~ "15k-16k",
+            (average_depth_1 >= 16000 & average_depth_1 < 17000) | (average_depth_2 >= 16000 & average_depth_2 < 17000) ~ "16k-17k",
+            (average_depth_1 >= 17000 & average_depth_1 < 18000) | (average_depth_2 >= 17000 & average_depth_2 < 18000) ~ "17k-18k",
+            (average_depth_1 >= 18000 & average_depth_1 < 19000) | (average_depth_2 >= 18000 & average_depth_2 < 19000) ~ "18k-19k",
+            (average_depth_1 >= 19000 & average_depth_1 < 20000) | (average_depth_2 >= 19000 & average_depth_2 < 20000) ~ "19k-20k",
+            average_depth_1 >= 20000 | average_depth_2 >= 20000 ~ ">=20k"
+        )
+    ) %>%
+    ggplot(
+        aes(
+            x = rep1,
+            y = rep2,
+            #color = depth_bin,
+            #shape = PassOrNot
+        )
+    ) +
+    geom_point(size = 4) +
+    coord_fixed(clip = "off") +
+    geom_abline(linetype = "dashed") +
+    labs(
+        title = "Replicate Correlation of CH VAFs < 10%",
+        color = "Reason", 
+        x = "Replicate 1 - VAF",
+        y = "Replicate 2 - VAF"
+    ) +
+    panel_theme_basic +
+    theme(
+        panel.grid.major = element_line(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(size = 18, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 18),
+        plot.margin = margin(0, 0, 0, 0, "cm")
+    ) +
+    #scale_shape_manual(values=c(1, 15, 16, 17, 18)) +
+    scale_color_nejm() +
+    scale_x_log10(
+        limits = c(0.0001, 0.1),
+        breaks = axis_ticks, 
+        labels = scales::percent_format(accuracy = 0.01)
+    ) +
+    scale_y_log10(
+        limits = c(0.0001, 0.1),
+        breaks = axis_ticks, 
+        labels = scales::percent_format(accuracy = 0.01)
+    ) +
+    annotate("text", x = 0.0001, y = 0.055, label = paste0("Pearson r = ", round(pearson_corr, 3)), size = 6, hjust = 0)
+supp_fig3
+ggsave(paste0(figures_save_path, "SupplementalFigure3.png"), plot = supp_fig3, width = 10, height = 8, dpi = 300)
 ```

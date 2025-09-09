@@ -74,7 +74,7 @@ crc_tp <- fread(paste0(data_file_path, "crc_timepoints.under17000.minimum.csv"))
 untreated_tp <- fread(paste0(data_file_path, "untreated_timepoints.minimum.csv"))                    # Untreated
 
 g1_tp <- rbind(
-    sclc_tp %>% mutate(Cohort = if_else(Trilaciclib == "Untreated", "Untreated", "SCLC")), 
+    sclc_tp %>% mutate(Cohort = "SCLC"), 
     tnbc_tp %>% mutate(Cohort = "TNBC"), 
     crc_tp %>% mutate(Cohort = "CRC"),
     untreated_tp %>% mutate(Cohort = "Untreated")
@@ -235,8 +235,7 @@ g1_tp <- g1_tp %>%
     left_join(
         g1_df %>%
             dplyr::select(
-                key, Gene,
-                VariantClass, gene_aachange, oncoKB, oncoKB_reviewed,
+                key, Gene, VariantClass, gene_aachange, oncoKB, oncoKB_reviewed,
                 n.loci.vep, source.totals.loci, n.loci.truncating.vep, source.totals.loci.truncating, n.HGVSp, source.totals.p, n.HGVSc, source.totals.c, CosmicCount, heme_cosmic_count, myeloid_cosmic_count
             ) %>%
             rowwise() %>%
@@ -315,7 +314,8 @@ g1_lab_changes <- g1_lab %>%
 g1_tp <- g1_tp %>%
     left_join(
         g1_lab_changes %>%
-        dplyr::select(Cohort, subject, 
+        dplyr::select(
+            Cohort, subject, 
             change_in_prop_BASO, change_in_prop_EOS, change_in_prop_LYM, change_in_prop_MONO, change_in_prop_NEUT, change_in_prop_GRAN
         ),
         by = c("DeID"="subject", "Cohort")
@@ -379,12 +379,8 @@ num_mutations_per_person <- g1_df %>%
     group_by(DeID, Gene, Trilaciclib, whichdraw) %>%
     summarise(n = sum(putative_driver)) %>%
     filter(Gene != "") %>%
-    #mutate(Gene = ifelse(Gene == "", "No Mutation", Gene)) %>%
     pivot_wider(names_from = Gene, values_from = n, values_fill = 0) %>%
-    ungroup() #%>%
-    # mutate(
-    #     DDR_Mutations = rowSums(.[, c("PPM1D", "TP53", "CHEK2")], na.rm = TRUE),
-    # )
+    ungroup()
 
 g1_mut_table <- g1_demo %>% 
     filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
@@ -395,9 +391,7 @@ g1_mut_table <- g1_demo %>%
 
 g1_mut_table %>%
     filter(whichdraw == "PreTx") %>%
-    mutate(
-        CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0)
-    ) %>%
+    mutate(CH_Binary = ifelse(rowSums(across(where(is.integer)), na.rm = TRUE) > 0, 1, 0)) %>%
     group_by(Trilaciclib) %>%
     summarise(n_ch = sum(CH_Binary), n_total = n())
 ```
@@ -436,18 +430,15 @@ fig1b <- g1_mut_table %>%
     panel_theme_basic +
     scale_fill_nejm() +
     scale_color_nejm() +
-    #scale_fill_manual(values = treatment_colors) +
-    #scale_color_manual(values = treatment_colors) +
-    theme(
-        plot.margin = margin(0, 1, 1, 1, "cm")
-    )
+    theme(plot.margin = margin(0, 1, 1, 1, "cm"))
 fig1b
 ggsave(paste0(figures_save_path, "Figure1B.png"), plot = fig1b, width = 14, height = 8, dpi = 300)
 ```
 
 # Figure 1C - Waterfall Plot
 ```{r fig1c}
-df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
+df_to_maf <- g1_df %>% 
+    filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
     filter(VariantClass != "synonymous_variant", putative_driver == 1, whichdraw == "PreTx") %>%
     tidyr::separate(key, into= c("Chromosome", "Start_Position", "Reference_Allele", "Tumor_Seq_Allele2"), sep = ":") %>%
     mutate(
@@ -467,7 +458,6 @@ df_to_maf <- g1_df %>% filter(Cohort == "SCLC" | Cohort == "Untreated") %>%
         ),
         stringsAsFactors = FALSE
     )
-#fwrite(df_to_maf, paste0(data_file_path, "waterfall_plots_raw_data.csv"), row.names = FALSE)
 
 nejmPal <- pal_nejm("default")(8)
 col <- nejmPal[1:6]
@@ -724,13 +714,12 @@ fig1e <- g1_mut_table %>%
         Proportion = n / total_patients,
         Gene = factor(Gene, levels = c(gene_list)),
         Treatment = factor(Treatment, levels = c("Healthy Control", "SCLC Post-Treatment"))
-        #Trilaciclib = factor(Trilaciclib, levels = c("Untreated", "Placebo", "Trilaciclib"))
     ) %>%
     ggplot(
         aes(
-        x = Gene,
-        y = Proportion,
-        fill = Treatment
+            x = Gene,
+            y = Proportion,
+            fill = Treatment
         )
     ) +
     geom_bar(color = "black", stat = "identity", position = position_dodge()) +
@@ -749,39 +738,6 @@ fig1e <- g1_mut_table %>%
     scale_y_continuous(labels = scales::percent, limits = c(NA, 0.6), expand = c(0, 0)) +
     scale_fill_nejm() +
     scale_color_nejm()
-
-# If we want to add significance annotations, we can use the following code
-    # do.call(geom_signif, default_sig(0.6, 0.75, 1, model_treatment_gene$p.value[1], model_treatment_gene$p.stars[1], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.65, 0.75, 1.25, model_treatment_gene$p.value[2], model_treatment_gene$p.stars[2], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.7, 1, 1.25, model_treatment_gene$p.value[3], model_treatment_gene$p.stars[3], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.35, 1.75, 2, model_treatment_gene$p.value[4], model_treatment_gene$p.stars[4], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.4, 1.75, 2.25, model_treatment_gene$p.value[5], model_treatment_gene$p.stars[5], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.45, 2, 2.25, model_treatment_gene$p.value[6], model_treatment_gene$p.stars[6], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.2, 2.75, 3, model_treatment_gene$p.value[7], model_treatment_gene$p.stars[7], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.25, 2.75, 3.25, model_treatment_gene$p.value[8], model_treatment_gene$p.stars[8], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.3, 3, 3.25, model_treatment_gene$p.value[9], model_treatment_gene$p.stars[9], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.45, 3.75, 4, model_treatment_gene$p.value[10], model_treatment_gene$p.stars[10], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.52, 3.75, 4.25, model_treatment_gene$p.value[11], model_treatment_gene$p.stars[11], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.6, 4, 4.25, model_treatment_gene$p.value[12], model_treatment_gene$p.stars[12], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.45, 4.75, 5, model_treatment_gene$p.value[13], model_treatment_gene$p.stars[13], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.52, 4.75, 5.25, model_treatment_gene$p.value[14], model_treatment_gene$p.stars[14], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.6, 5, 5.25, model_treatment_gene$p.value[15], model_treatment_gene$p.stars[15], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.25, 5.75, 6, model_treatment_gene$p.value[16], model_treatment_gene$p.stars[16], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.32, 5.75, 6.25, model_treatment_gene$p.value[17], model_treatment_gene$p.stars[17], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.4, 6, 6.25, model_treatment_gene$p.value[18], model_treatment_gene$p.stars[18], show_values = FALSE, hide_ns = FALSE)) +
-    # do.call(geom_signif, default_sig(0.1, 6.75, 7, model_treatment_gene$p.value[19], model_treatment_gene$p.stars[19], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.15, 6.75, 7.25, model_treatment_gene$p.value[20], model_treatment_gene$p.stars[20], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.2, 7, 7.25, model_treatment_gene$p.value[21], model_treatment_gene$p.stars[21], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.1, 7.75, 8, model_treatment_gene$p.value[22], model_treatment_gene$p.stars[22], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.15, 7.75, 8.25, model_treatment_gene$p.value[23], model_treatment_gene$p.stars[23], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.2, 8, 8.25, model_treatment_gene$p.value[24], model_treatment_gene$p.stars[24], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.1, 8.75, 9, model_treatment_gene$p.value[25], model_treatment_gene$p.stars[25], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.15, 8.75, 9.25, model_treatment_gene$p.value[26], model_treatment_gene$p.stars[26], show_values = FALSE)) +
-    # do.call(geom_signif, default_sig(0.2, 9, 9.25, model_treatment_gene$p.value[27], model_treatment_gene$p.stars[27], show_values = FALSE)) #+
-    #do.call(geom_signif, default_sig(0.6, 9.75, 10, model_treatment_gene$p.value[28], model_treatment_gene$p.stars[28], show_values = FALSE, hide_ns = FALSE)) +
-    #do.call(geom_signif, default_sig(0.65, 9.75, 10.25, model_treatment_gene$p.value[29], model_treatment_gene$p.stars[29], show_values = FALSE, hide_ns = FALSE)) +
-    #do.call(geom_signif, default_sig(0.7, 10, 10.25, model_treatment_gene$p.value[30], model_treatment_gene$p.stars[30], show_values = FALSE, hide_ns = FALSE)) 
-
 fig1e
 ggsave(paste0(figures_save_path, "Figure1E.png"), plot = fig1e, width = 10, height = 6, dpi = 300)
 ```
@@ -799,8 +755,7 @@ model_treatment_gene_class <- map_dfr(c("DTA_Mutations", "DDR_Mutations"), funct
                 mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo")))
         ) %>%
         sjPlot::get_model_data(type = "est") %>%
-        mutate(
-            GeneClass = ifelse(gene_class == "DTA_Mutations", "DTA", "DDR"))
+        mutate(GeneClass = ifelse(gene_class == "DTA_Mutations", "DTA", "DDR"))
     )
 })
 model_treatment_gene_class <- model_treatment_gene_class %>% filter(term != "Age")
@@ -825,9 +780,9 @@ fig1e_cont <- g1_mut_table %>%
     ) %>%
     ggplot(
         aes(
-        x = Gene,
-        y = Proportion,
-        fill = Trilaciclib
+            x = Gene,
+            y = Proportion,
+            fill = Trilaciclib
         )
     ) +
     geom_bar(color = "black", stat = "identity", position = position_dodge()) +
@@ -1168,7 +1123,7 @@ ext_fig_tp53
 ggsave(paste0(figures_save_path, "Figure2E.png"), plot = fig2e, width = 20, height = 8, dpi = 300)
 ```
 
-# Extended Figure - These take a long time to run and sometimes the server crashes, so they are commented out.
+# Extended Figure - Lollipop Plots for TP53, PPM1D, CHEK2
 ```{r lollipop, include=FALSE}
 colors.mutation_type <- brewer.pal(8,"Dark2")[1:8]
 names(colors.mutation_type) <- c("frameshift_variant", "inframe_insertion", "splice_region_variant", "inframe_deletion", 'start_lost','stop_gained','missense_variant', "synonymous_variant")
@@ -1541,6 +1496,7 @@ data_to_plot %>%
     mutate(perc_reduction = (1 - median_gr_Trilaciclib / median_gr_Placebo) * 100) %>%
     select(perc_reduction)
 
+# We want to see the effect on the largest clone per gene per person
 data_to_plot <- data_to_plot %>%
     group_by(DeID, Gene) %>%
     slice_max(abs(change_in_VAF), n = 1) %>%
@@ -1585,8 +1541,6 @@ supp_fig1 <- data_to_plot %>%
     geom_hline(yintercept = 0, linetype = "dashed", alpha = 0.5) +
     geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.1, size = 1, outlier.shape = NA) +
     geom_point(position = position_jitterdodge(jitter.width=1)) +
-    #facet_wrap(~Gene_Class) +
-    #geom_point(position = position_dodge(width = 0.8), alpha = 0.3) +
     labs(
         x = "",
         y = "Change in VAF per Month",
@@ -1594,8 +1548,6 @@ supp_fig1 <- data_to_plot %>%
         size = "Starting Clone VAF",
     ) +
     panel_theme_basic +
-    #scale_fill_nejm() +
-    #scale_color_nejm() +
     scale_fill_manual(values = treatment_colors) +
     scale_color_manual(values = treatment_colors) +
     scale_alpha_identity() +
@@ -1896,23 +1848,10 @@ pearson_corr <- cor(bio_fig4_data$rep1, bio_fig4_data$rep2, use = "complete.obs"
 axis_ticks <- c(0.0001, 0.0002, 0.0005, 0.001, 0.0020, 0.005, 0.01, 0.020, 0.05, 0.1)
 
 supp_fig3 <- bio_fig4_data %>%
-    mutate(
-        depth_bin = case_when(
-            average_depth_1 < 15000 | average_depth_2 < 15000 ~ "<15k",
-            (average_depth_1 >= 15000 & average_depth_1 < 16000) | (average_depth_2 >= 15000 & average_depth_2 < 16000) ~ "15k-16k",
-            (average_depth_1 >= 16000 & average_depth_1 < 17000) | (average_depth_2 >= 16000 & average_depth_2 < 17000) ~ "16k-17k",
-            (average_depth_1 >= 17000 & average_depth_1 < 18000) | (average_depth_2 >= 17000 & average_depth_2 < 18000) ~ "17k-18k",
-            (average_depth_1 >= 18000 & average_depth_1 < 19000) | (average_depth_2 >= 18000 & average_depth_2 < 19000) ~ "18k-19k",
-            (average_depth_1 >= 19000 & average_depth_1 < 20000) | (average_depth_2 >= 19000 & average_depth_2 < 20000) ~ "19k-20k",
-            average_depth_1 >= 20000 | average_depth_2 >= 20000 ~ ">=20k"
-        )
-    ) %>%
     ggplot(
         aes(
             x = rep1,
-            y = rep2,
-            #color = depth_bin,
-            #shape = PassOrNot
+            y = rep2
         )
     ) +
     geom_point(size = 4) +
@@ -1932,7 +1871,6 @@ supp_fig3 <- bio_fig4_data %>%
         axis.text.y = element_text(size = 18),
         plot.margin = margin(0, 0, 0, 0, "cm")
     ) +
-    #scale_shape_manual(values=c(1, 15, 16, 17, 18)) +
     scale_color_nejm() +
     scale_x_log10(
         limits = c(0.0001, 0.1),

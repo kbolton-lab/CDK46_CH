@@ -66,7 +66,7 @@ Depending on various processing time and connection to the biomaRt server, can t
 - tnbc_df.minimum.csv
 
 ## Serial Timepoint Values:
-- untreated_timepoints.minimum.csv
+- untreated_timepoints.under17000.minimum.csv
 - sclc_timepoints.under17000.minimum.csv
 - crc_timepoints.under17000.minimum.csv
 - tncb_timepoints.under17000.minimum.csv

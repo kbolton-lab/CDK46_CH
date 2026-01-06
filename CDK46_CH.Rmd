@@ -2070,7 +2070,6 @@ cv_plot <- coefficient_of_variation_no_filter %>%
     axis.title.y = element_text(size = 16)
   )
 cv_plot
-ggsave("/Users/chani/Library/CloudStorage/Box-Box/Irenaeus/CDK46_CH/figures/cv_plot.png", cv_plot, width = 6, height = 8)
 
 coefficient_of_variation_combined <- rbind(
     g1_tp %>%
@@ -2129,7 +2128,6 @@ cv_combined_plot <- coefficient_of_variation_combined %>%
     ) +
     geom_signif(y_position = 1.5, xmin = 1, xmax = 2, annotation = paste0("p = ", format(cv_stats$p.value[1], digits = 2), cv_stats$p.stars[1]), tip_length = 0.01, textsize = 5)
 cv_combined_plot
-ggsave("/Users/chani/Library/CloudStorage/Box-Box/Irenaeus/CDK46_CH/figures/rel_cv_combined_plot.png", cv_combined_plot, width = 6, height = 8)
 
 supp_fig4 <- cowplot::plot_grid(
     cv_plot, cv_combined_plot,
@@ -2137,5 +2135,5 @@ supp_fig4 <- cowplot::plot_grid(
     labels = c("a", "b"),
     label_size = 18
 )
-ggsave("/Users/chani/Library/CloudStorage/Box-Box/Irenaeus/CDK46_CH/figures/SupplementalFigure4.png", supp_fig4, width = 12, height = 8)
+ggsave(paste0(figures_save_path, "SupplementalFigure4.png"), supp_fig4, width = 12, height = 8)
 ```

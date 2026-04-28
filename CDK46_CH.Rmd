@@ -26,6 +26,7 @@ knitr::opts_chunk$set(dev = "svg")
 library(tidyverse)
 library(data.table)
 library(table1)
+library(svglite)
 library(ggpubr)
 library(ComplexHeatmap)
 library(ggsci)
@@ -127,7 +128,7 @@ for_table <- g1_demo %>%
 ```{r plot_variables, include=TRUE, message = FALSE, warning = FALSE}
 panel_theme_basic <- theme_bw() + theme(
   panel.border = element_blank(),
-  legend.title = element_blank(),
+  legend.title = element_text(size = 22),
   legend.key.size = unit(5, "mm"),
   legend.text = element_text(size = 22),
   legend.position = "top",
@@ -147,7 +148,7 @@ panel_theme_basic <- theme_bw() + theme(
 
 default_sig <- function(y_position, xmin, xmax, model_pvalue, model_stars, tip_length = 0.03, size = 1, textsize = 10, color = "black", show_values = TRUE, hide_ns = TRUE) {
   if (show_values){
-    list(y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = paste0(format(model_pvalue, digits = 2), model_stars), tip_length = tip_length, size = size, textsize = textsize, color = color)
+    list(y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = paste0("P=", format(model_pvalue, digits = 2)), tip_length = tip_length, size = size, textsize = textsize, color = color)
   } else {
     if (model_stars == "") { model_stars <- "ns"}
     if (hide_ns & model_stars == "ns") { 
@@ -160,7 +161,7 @@ default_sig <- function(y_position, xmin, xmax, model_pvalue, model_stars, tip_l
 
 default_sig_data <- function(data, y_position, xmin, xmax, model_pvalue, model_stars, tip_length = 0.03, size = 1, textsize = 10, color = "black", show_values = TRUE, hide_ns = TRUE) {
   if (show_values) {
-    list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = paste0(format(model_pvalue, digits = 2), model_stars), tip_length = tip_length, size = size, textsize = textsize, color = color)
+    list(data = data, y_position = y_position, xmin = c(xmin), xmax = c(xmax), annotation = paste0("P=", format(model_pvalue, digits = 2)), tip_length = tip_length, size = size, textsize = textsize, color = color)
   } else {
     if (model_stars == "") { model_stars <- "ns"}
     if (hide_ns & model_stars == "ns") { 
@@ -373,6 +374,54 @@ g1_tp$Race <- factor(g1_tp$Race, levels = c("White", "Non-White"))
 g1_tp$SmokingStatus <- factor(g1_tp$SmokingStatus, levels = c("Never", "Former", "Current", "Unknown"))
 ```
 
+# Spider Plots
+```{r spider_plots, include=TRUE, message = FALSE, warning = FALSE}
+avg_change <- g1_tp %>% group_by(Gene_Class, Cohort) %>% summarise(n = mean(change_in_VAF))
+
+g1_tp %>%
+    filter(Gene_Class == "DTA" | Gene_Class == "DDR") %>%
+    filter(Cohort == "Untreated") %>%
+    filter(change_in_days <= 1000) %>%
+    mutate(
+        Gene = factor(Gene, levels = gene_list)
+    ) %>%
+    ggplot(
+        aes(
+            x = change_in_days,
+            y = change_in_VAF,
+            #fill = Gene,
+            color = Gene
+        )
+    ) +
+    geom_segment(aes(xend = 0, yend = 0), size = 0.1) +
+    geom_point() +
+    labs(
+        x = "Time Elapsed (Days)",
+        y = "Change in VAF",
+        fill = "Cohort",
+        title = ""
+    ) +
+    panel_theme_basic +
+    scale_fill_nejm() +
+    scale_color_nejm() +
+    scale_y_continuous(
+        trans = scales::pseudo_log_trans(0.001),
+        limits = \(x) {
+            c(-max(abs(x)), max(abs(x)))
+        }
+    ) +
+    facet_wrap(~Gene) + 
+    #facet_wrap(Gene~Cohort) +#, ncol = 3, nrow = 2) +
+    theme(
+        legend.position = "none",
+        #strip.text = element_blank(),
+        plot.title = element_text(hjust = 0, vjust = 2, size = 20),
+        #panel.spacing = unit(2, "lines"),
+        axis.text.x = element_text(size = 16),
+        axis.text.y = element_text(size = 16)
+    )
+```
+
 # Mutation Table - SCLC and Untreated ONLY
 ```{r mutation_table, include=TRUE, message = FALSE, warning = FALSE}
 num_mutations_per_person <- g1_df %>%
@@ -433,8 +482,9 @@ fig1b <- g1_mut_table %>%
     scale_fill_nejm() +
     scale_color_nejm() +
     theme(plot.margin = margin(0, 1, 0, 1, "cm"))
+pdf(paste0(figures_save_path, "Figure1B.pdf"), width = 14, height = 8)
 fig1b
-ggsave(paste0(figures_save_path, "Figure1B.png"), plot = fig1b, width = 14, height = 8, dpi = 300)
+dev.off()
 ```
 
 # Figure 1C - Waterfall Plot
@@ -601,7 +651,7 @@ p <- oncoPrint(mat,
     )
 )
 
-png(paste0(figures_save_path, "Figure1C.png"), width = 8, height = 5, units = "in", res = 300)
+pdf(paste0(figures_save_path, "Figure1C.pdf"), width = 8, height = 5)
 draw(
     p,
     heatmap_legend_side = "bottom",
@@ -654,10 +704,12 @@ fig1d <- df_to_plot %>%
         axis.text.x = element_text(angle = 45, hjust = 1, face = "italic"),
         plot.margin = margin(0, 0, 0, 0, "cm"),
         legend.text = element_text(size = 18),
+        legend.title = element_blank()
     ) +
     scale_fill_nejm()
+pdf(paste0(figures_save_path, "Figure1D.pdf"), width = 8, height = 10)
 fig1d
-ggsave(paste0(figures_save_path, "Figure1D.png"), plot = fig1d, width = 8, height = 10, dpi = 300)
+dev.off()
 ```
 
 # Figure 1E - Proportion of Patients with CH Mutations
@@ -693,7 +745,7 @@ model_treatment_binary_gene <- map_dfr(c(gene_list), function(gene){
         family = binomial(link = "logit"),
         data = g1_mut_table %>%
             filter(whichdraw == "PostTx") %>%
-            mutate(Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", "SCLC Post-Treatment"))
+            mutate(Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", "Post-Treatment"))
     ) %>%
     sjPlot::get_model_data(type = "est") %>%
     mutate(Gene = gene)
@@ -704,8 +756,8 @@ g1_mut_table <- g1_mut_table %>%
     mutate(
         DTA_Mutations = ifelse(rowSums(across(c("DNMT3A", "TET2", "ASXL1")), na.rm = TRUE) > 0, 1, 0),
         DDR_Mutations = ifelse(rowSums(across(c("PPM1D", "TP53", "CHEK2")), na.rm = TRUE) > 0, 1, 0),
-        Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", "SCLC Post-Treatment"),
-        Treatment = factor(Treatment, levels = c("Healthy Control", "SCLC Post-Treatment"))
+        Treatment = ifelse(Trilaciclib == "Untreated", "Healthy Control", "Post-Treatment"),
+        Treatment = factor(Treatment, levels = c("Healthy Control", "Post-Treatment"))
     )
 
 g1_mut_table %>%
@@ -748,13 +800,20 @@ fig1e <- g1_mut_table %>%
         axis.text.x = element_text(angle = 45, hjust = 1, face = "italic"),
         legend.position = c(0.7, 0.8),
         legend.direction = "vertical",
-        plot.margin = margin(0, 0, 0, 0, "cm")
+        plot.margin = margin(1, 0, 0, 1, "cm")
     ) +
     scale_y_continuous(labels = scales::percent, limits = c(NA, 0.6), expand = c(0, 0)) +
-    scale_fill_nejm() +
+    #scale_fill_nejm() +
+    scale_fill_manual(values = c("Healthy Control" = "#BC3C29FF", "Post-Treatment" = "#0072B2")) +
     scale_color_nejm()
+    do.call(geom_signif, default_sig(0.32, 3.75, 4.25, 0, "***", tip_length = 0.05, size = 1.5, show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig(0.37, 4.75, 5.25, 0, "***", tip_length = 0.05, size = 1.5, show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig(0.20, 5.75, 6.25, 0, "*", tip_length = 0.05, size = 1.5, show_values = FALSE, hide_ns = FALSE))
 fig1e
-ggsave(paste0(figures_save_path, "Figure1E.png"), plot = fig1e, width = 10, height = 6, dpi = 300)
+#pdf(paste0(figures_save_path, "Figure1C.pdf"), width = 8, height = 5)
+pdf(paste0(figures_save_path, "Figure1E.pdf"), width = 10, height = 6)
+fig1e
+dev.off()
 ```
 
 # Figure 1E - Proportion of Patients with CH Mutations Continued...
@@ -806,7 +865,7 @@ fig1e_cont <- g1_mut_table %>%
     labs(
         x = "",
         y = "Percent of Patients\nwith Mutated Gene\nPost-Treatment",
-        fill = "Trilaciclib"
+        fill = "Status"
     ) +
     panel_theme_basic +
     theme(
@@ -817,10 +876,11 @@ fig1e_cont <- g1_mut_table %>%
     ) +
     scale_y_continuous(labels = scales::percent, limits = c(NA, 0.75), expand = c(0, 0)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig(0.65, 0.75, 1.25, model_treatment_gene_class$p.value[1], model_treatment_gene_class$p.stars[1], tip_length = 0.1, size = 1.5, show_values = FALSE, hide_ns = FALSE)) +
-    do.call(geom_signif, default_sig(0.65, 1.75, 2.25, round(model_treatment_gene_class$p.value[2], 2), model_treatment_gene_class$p.stars[2], tip_length = 0.1, size = 1.5, show_values = TRUE, hide_ns = FALSE))
+    do.call(geom_signif, default_sig(0.65, 0.75, 1.25, model_treatment_gene_class$p.value[1], model_treatment_gene_class$p.stars[1], tip_length = 0.1, size = 0.5, show_values = FALSE, hide_ns = FALSE)) +
+    do.call(geom_signif, default_sig(0.65, 1.75, 2.25, round(model_treatment_gene_class$p.value[2], 2), model_treatment_gene_class$p.stars[2], tip_length = 0.1, size = 0.5, show_values = TRUE, hide_ns = FALSE))
+pdf(paste0(figures_save_path, "Figure1E_Continued.pdf"), width = 10, height = 6)
 fig1e_cont
-ggsave(paste0(figures_save_path, "Figure1E_Continued.png"), plot = fig1e_cont, width = 10, height = 6, dpi = 300)
+dev.off()
 ```
 
 # Figure 1F - Small Cell Lung Cancer Growth Rate Plot
@@ -863,7 +923,8 @@ fig1f <- df_to_plot %>%
     labs(
         y = "Growth Rate", 
         x = '', 
-        title = ""
+        title = "",
+        fill = "Cohort"
     ) +
     panel_theme_basic +
     theme(
@@ -872,18 +933,20 @@ fig1f <- df_to_plot %>%
         axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 32),
         legend.text = element_text(size = 30),
+        legend.title = element_text(size = 30),
         plot.margin = margin(0, 0, 0, 0, "cm")
     ) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 2))
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 0.5))
+pdf(paste0(figures_save_path, "Figure1F.pdf"), width = 14, height = 14)
 fig1f
-ggsave(paste0(figures_save_path, "Figure1F.png"), plot = fig1f, width = 14, height = 14, dpi = 300)
+dev.off()
 ```
 
 # Figure 2C - Colorectal Cancer Growth Rate Plot
@@ -928,7 +991,8 @@ fig2c <- df_to_plot %>%
     labs(
         y = "Growth Rate", 
         x = '', 
-        title = ""
+        title = "",
+        fill = "Treatment"
     ) +
     panel_theme_basic +
         theme(
@@ -937,18 +1001,20 @@ fig2c <- df_to_plot %>%
         axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 32),
         legend.text = element_text(size = 30),
+        legend.title = element_text(size = 30),
         plot.margin = margin(0, 0, 0, 0, "cm")
     ) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 2))
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 0.5))
+pdf(paste0(figures_save_path, "Figure2C.pdf"), width = 10, height = 8)
 fig2c
-ggsave(paste0(figures_save_path, "Figure2C.png"), plot = fig2c, width = 10, height = 8, dpi = 300)
+dev.off()
 ```
 
 # Figure 2D - Triple Negative Breast Cancer Growth Rate Plot
@@ -999,18 +1065,20 @@ fig2d <- df_to_plot %>%
         axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 32),
         legend.text = element_text(size = 30),
+        legend.title = element_text(size = 30),
         plot.margin = margin(0, 0, 0, 0, "cm")
     ) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 2))
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_class$p.value[1], model_growth_rate_class$p.stars[1], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_class$p.value[2], model_growth_rate_class$p.stars[2], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_class$p.value[5], model_growth_rate_class$p.stars[5], show_values = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 0.5))
+pdf(paste0(figures_save_path, "Figure2D.pdf"), width = 10, height = 8)
 fig2d
-ggsave(paste0(figures_save_path, "Figure2D.png"), plot = fig2d, width = 10, height = 8, dpi = 300)
+dev.off()
 ```
 
 # Figure 2E - Genes
@@ -1122,7 +1190,8 @@ fig2e <- df_to_plot %>%
     labs(
         y = "Growth Rate", 
         x = '', 
-        title = ""
+        title = "",
+        fill = "Treatment"
     ) +
     panel_theme_basic +
     theme(
@@ -1131,22 +1200,24 @@ fig2e <- df_to_plot %>%
         axis.title.x = element_text(size = 36),
         axis.title.y = element_text(size = 36),
         legend.text = element_text(size = 34),
+        legend.title = element_text(size = 34),
         plot.margin = margin(0, 0, 0, 0, "cm")
     ) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*TP53*"), 5, 0.75, 1, model_growth_rate_gene$p.value[1], model_growth_rate_gene$p.stars[1], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*TP53*"), 6, 0.75, 1.25, model_growth_rate_gene$p.value[2], model_growth_rate_gene$p.stars[2], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*TP53*"), 7, 1, 1.25, model_growth_rate_gene$p.value[7], model_growth_rate_gene$p.stars[7], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*PPM1D*"), 5, 1.75, 2, model_growth_rate_gene$p.value[3], model_growth_rate_gene$p.stars[3], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) + 
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*PPM1D*"), 6, 1.75, 2.25, model_growth_rate_gene$p.value[4], model_growth_rate_gene$p.stars[4], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*PPM1D*"), 7.1, 2, 2.25, model_growth_rate_gene$p.value[8], model_growth_rate_gene$p.stars[8], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 5, 2.75, 3, model_growth_rate_gene$p.value[5], model_growth_rate_gene$p.stars[5], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 6, 2.75, 3.25, model_growth_rate_gene$p.value[6], model_growth_rate_gene$p.stars[6], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
-    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 7.1, 3, 3.25, model_growth_rate_gene$p.value[9], model_growth_rate_gene$p.stars[9], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 3)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*TP53*"), 5, 0.75, 1, model_growth_rate_gene$p.value[1], model_growth_rate_gene$p.stars[1], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*TP53*"), 6, 0.75, 1.25, model_growth_rate_gene$p.value[2], model_growth_rate_gene$p.stars[2], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*TP53*"), 7, 1, 1.25, model_growth_rate_gene$p.value[7], model_growth_rate_gene$p.stars[7], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*PPM1D*"), 5, 1.75, 2, model_growth_rate_gene$p.value[3], model_growth_rate_gene$p.stars[3], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) + 
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*PPM1D*"), 6, 1.75, 2.25, model_growth_rate_gene$p.value[4], model_growth_rate_gene$p.stars[4], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*PPM1D*"), 7.1, 2, 2.25, model_growth_rate_gene$p.value[8], model_growth_rate_gene$p.stars[8], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 5, 2.75, 3, model_growth_rate_gene$p.value[5], model_growth_rate_gene$p.stars[5], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 6, 2.75, 3.25, model_growth_rate_gene$p.value[6], model_growth_rate_gene$p.stars[6], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 7.1, 3, 3.25, model_growth_rate_gene$p.value[9], model_growth_rate_gene$p.stars[9], show_values = TRUE, hide_ns = FALSE, textsize = 10, size = 0.5)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*DNMT3A*"), 6, 4, 4.25, "1.528048e-02", "*", show_values = FALSE, hide_ns = FALSE, textsize = 6))
+pdf(paste0(figures_save_path, "Figure2E.pdf"), width = 16, height = 12)
 fig2e
-ggsave(paste0(figures_save_path, "Figure2E.png"), plot = fig2e, width = 16, height = 12, dpi = 300)
+dev.off()
 
 ext_fig_tp53 <- df_to_plot %>%
     filter(Gene == "*TP53*") %>%
@@ -1163,8 +1234,9 @@ ext_fig_tp53 <- df_to_plot %>%
     geom_text(data = counts_variant_class, aes(label = n, y = 0.06), size = 8, position = position_dodge(width = 0.8)) +
     labs(
         y = "Growth Rate", 
-        x = 'Missense', 
-        title = "TP53"
+        x = '', 
+        title = "TP53",
+        fill = "Treatment"
     ) +
     panel_theme_basic +
     theme(
@@ -1172,14 +1244,15 @@ ext_fig_tp53 <- df_to_plot %>%
     ) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), breaks = c(-0.05, -0.01, -0.005, 0, 0.005, 0.01, 0.05), limit = c(NA, 1.5)) +
     scale_fill_manual(values = treatment_colors) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_variant_class$p.value[1], model_growth_rate_variant_class$p.stars[1], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_variant_class$p.value[2], model_growth_rate_variant_class$p.stars[2], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_variant_class$p.value[5], model_growth_rate_variant_class$p.stars[5], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_variant_class$p.value[3], model_growth_rate_variant_class$p.stars[3], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_variant_class$p.value[4], model_growth_rate_variant_class$p.stars[4], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
-    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_variant_class$p.value[6], model_growth_rate_variant_class$p.stars[6], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2))
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 0.75, 1, model_growth_rate_variant_class$p.value[1], model_growth_rate_variant_class$p.stars[1], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 0.75, 1.25, model_growth_rate_variant_class$p.value[2], model_growth_rate_variant_class$p.stars[2], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 1, 1.25, model_growth_rate_variant_class$p.value[5], model_growth_rate_variant_class$p.stars[5], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_variant_class$p.value[3], model_growth_rate_variant_class$p.stars[3], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_variant_class$p.value[4], model_growth_rate_variant_class$p.stars[4], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 0.5)) +
+    do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_variant_class$p.value[6], model_growth_rate_variant_class$p.stars[6], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 0.5))
+pdf(paste0(figures_save_path, "ExtendedFigure1G.pdf"), width = 10, height = 7)
 ext_fig_tp53
-ggsave(paste0(figures_save_path, "ExtendedFigure1G.png"), plot = ext_fig_tp53, width = 10, height = 7, dpi = 300)
+dev.off()
 ```
 
 # Extended Figure - Lollipop Plots for TP53, PPM1D, CHEK2
@@ -1207,7 +1280,9 @@ ext_fig_tp53_lollipop <- g1_tp %>%
                 protein_length=prot.info$protein_length, 
                 cutoff.hotspot = 20,
                 colors.mutation_type=colors.mutation_type)
-ggsave(paste0(figures_save_path, "ExtendedFigure1A.png"), plot = ext_fig_tp53_lollipop, width = 13, height = 8, dpi = 300)
+pdf(paste0(figures_save_path, "ExtendedFigure1A.pdf"), width = 13, height = 8)
+ext_fig_tp53_lollipop
+dev.off()
 
 prot.info = get_protein_info("PPM1D")
 ext_fig_ppm1d_lollipop <- g1_tp %>%
@@ -1229,7 +1304,9 @@ ext_fig_ppm1d_lollipop <- g1_tp %>%
                 protein_length=prot.info$protein_length, 
                 cutoff.hotspot = 20,
                 colors.mutation_type=colors.mutation_type)
-ggsave(paste0(figures_save_path, "ExtendedFigure1B.png"), plot = ext_fig_ppm1d_lollipop, width = 13, height = 8, dpi = 300)
+pdf(paste0(figures_save_path, "ExtendedFigure1B.pdf"), width = 13, height = 8)
+ext_fig_ppm1d_lollipop
+dev.off()
 
 prot.info = get_protein_info("CHEK2")
 ext_fig_chek2_lollipop <- g1_tp %>%
@@ -1251,7 +1328,9 @@ ext_fig_chek2_lollipop <- g1_tp %>%
                 protein_length=prot.info$protein_length, 
                 cutoff.hotspot = 20,
                 colors.mutation_type=colors.mutation_type)
-ggsave(paste0(figures_save_path, "ExtendedFigure1C.png"), plot = ext_fig_chek2_lollipop, width = 13, height = 8, dpi = 300)
+pdf(paste0(figures_save_path, "ExtendedFigure1C.pdf"), width = 13, height = 8)
+ext_fig_chek2_lollipop
+dev.off()
 ```
 
 # Extended Figure 1 Bubble Plot
@@ -1326,7 +1405,9 @@ ext_fig_tp53_bubble <- df_to_plot_ddr %>%
         shape = guide_legend(byrow = TRUE, order = 2, override.aes = list(size = 5)),
         size = guide_legend(byrow = TRUE, order = 3, override.aes = list(size = 5))
     )
-ggsave(paste0(figures_save_path, "ExtendedFigure1D.png"), plot = ext_fig_tp53_bubble, width = 10, height = 7, dpi = 300)
+pdf(paste0(figures_save_path, "ExtendedFigure1D.pdf"), width = 10, height = 7)
+ext_fig_tp53_bubble
+dev.off()
 
 ext_fig_ppm1d_bubble <- df_to_plot_ddr %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
@@ -1366,10 +1447,17 @@ ext_fig_ppm1d_bubble <- df_to_plot_ddr %>%
     scale_x_continuous(trans = scales::pseudo_log_trans(0.001), limit = c(NA, NA),  breaks = c(0, 0.01, 0.05, 0.01, 0.05, 0.1)) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), limit = c(NA, 0.05)) +
     theme(
-        legend.position = "none",
+        legend.position = c(0.60, 0.95),
         plot.margin = margin(0, 0, 0, 0, "cm"),
+    ) +
+    guides(
+        color = guide_legend(byrow = TRUE, order = 1, override.aes = list(size = 5)),
+        shape = guide_legend(byrow = TRUE, order = 2, override.aes = list(size = 5)),
+        size = guide_legend(byrow = TRUE, order = 3, override.aes = list(size = 5))
     )
-ggsave(paste0(figures_save_path, "ExtendedFigure1E.png"), plot = ext_fig_ppm1d_bubble, width = 10, height = 7, dpi = 300)
+pdf(paste0(figures_save_path, "ExtendedFigure1E.pdf"), width = 10, height = 7)
+ext_fig_ppm1d_bubble
+dev.off()
 
 ext_fig_chek2_bubble <- df_to_plot_ddr %>%
     filter(growth_rate != "Inf" & growth_rate != "-Inf") %>%
@@ -1409,10 +1497,17 @@ ext_fig_chek2_bubble <- df_to_plot_ddr %>%
     scale_x_continuous(trans = scales::pseudo_log_trans(0.001), limit = c(NA, NA),  breaks = c(0, 0.01, 0.05, 0.01, 0.05, 0.1)) +
     scale_y_continuous(trans = scales::pseudo_log_trans(0.001), limit = c(NA, 0.05)) +
     theme(
-        legend.position = "none",
+        legend.position = c(0.60, 0.95),
         plot.margin = margin(0, 0, 0, 01, "cm"),
+    ) +
+    guides(
+        color = guide_legend(byrow = TRUE, order = 1, override.aes = list(size = 5)),
+        shape = guide_legend(byrow = TRUE, order = 2, override.aes = list(size = 5)),
+        size = guide_legend(byrow = TRUE, order = 3, override.aes = list(size = 5))
     )
-ggsave(paste0(figures_save_path, "ExtendedFigure1F.png"), plot = ext_fig_chek2_bubble, width = 10, height = 7, dpi = 300)
+pdf(paste0(figures_save_path, "ExtendedFigure1F.pdf"), width = 10, height = 7)
+ext_fig_chek2_bubble
+dev.off()
 ```
 
 # Supplementary Table 1 - CH Mutation Variants
@@ -1506,6 +1601,42 @@ model_growth_rate_cosmic_count_ddr <- glm(
         )
     )
 model_growth_rate_cosmic_count_ddr
+
+g1_tp_tmp <- g1_tp_tmp %>%
+    mutate(Trilaciclib = factor(Trilaciclib, levels = c("Trilaciclib", "Placebo")))
+# Center
+g1_tp_tmp$preVAF_c <- scale(g1_tp_tmp$preVAF, center = TRUE, scale = FALSE)
+g1_tp_tmp$Age_c <- scale(g1_tp_tmp$Age, center = TRUE, scale = FALSE)
+
+g1_tp_tmp_ppm1d <- g1_tp_tmp %>% filter(Gene == "PPM1D")
+g1_tp_tmp_ppm1d$preVAF_c <- scale(g1_tp_tmp_ppm1d$preVAF, center = TRUE, scale = FALSE)
+g1_tp_tmp_ppm1d$Age_c <- scale(g1_tp_tmp_ppm1d$Age, center = TRUE, scale = FALSE)
+
+g1_tp_tmp_tp53 <- g1_tp_tmp %>% filter(Gene == "TP53")
+g1_tp_tmp_tp53$preVAF_c <- scale(g1_tp_tmp_tp53$preVAF, center = TRUE, scale = FALSE)
+g1_tp_tmp_tp53$Age_c <- scale(g1_tp_tmp_tp53$Age, center = TRUE, scale = FALSE)
+
+g1_tp_tmp_chek2 <- g1_tp_tmp %>% filter(Gene == "CHEK2")
+g1_tp_tmp_chek2$preVAF_c <- scale(g1_tp_tmp_chek2$preVAF, center = TRUE, scale = FALSE)
+g1_tp_tmp_chek2$Age_c <- scale(g1_tp_tmp_chek2$Age, center = TRUE, scale = FALSE)
+
+g1_tp_tmp_ddr <- g1_tp_tmp %>% filter(Gene_Class == "DDR")
+g1_tp_tmp_ddr$preVAF_c <- scale(g1_tp_tmp_ddr$preVAF, center = TRUE, scale = FALSE)
+g1_tp_tmp_ddr$Age_c <- scale(g1_tp_tmp_ddr$Age, center = TRUE, scale = FALSE)
+
+glm(
+    formula = growth_rate ~ Trilaciclib + preVAF_c + Age_c + Trilaciclib*preVAF_c + Trilaciclib*Age_c,
+    data = g1_tp_tmp_ddr
+) %>%
+    broom::tidy(conf.int = TRUE) %>%
+    mutate(
+        p.stars = case_when(
+            p.value < 0.001 ~ "***",
+            p.value >= 0.001 & p.value < 0.01 ~ "**",
+            p.value >= 0.01 & p.value < 0.05 ~ "*",
+            TRUE ~ "ns"
+        )
+    )
 ```
 
 # Supplemental Table 5 - Blood Counts Analysis
@@ -1638,8 +1769,9 @@ supp_fig1 <- data_to_plot %>%
         color = guide_legend(title.position = "top", title = "Drug Treatment"),
         size = guide_legend(title.position = "top")
     )
+pdf(paste0(figures_save_path, "SupplementalFigure1.svg"), width = 10, height = 8)
 supp_fig1
-ggsave(paste0(figures_save_path, "SupplementalFigure1.png"), plot = supp_fig1, width = 10, height = 8, dpi = 300)
+dev.off()
 
 data_to_plot %>%
     ungroup() %>%
@@ -1711,8 +1843,9 @@ supp_fig2a <- df_to_plot %>%
     do.call(geom_signif, default_sig_data(df_to_plot, 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot, 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot, 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 2))
+pdf(paste0(figures_save_path, "SupplementalFigure2A.pdf"), width = 10, height = 8)
 supp_fig2a
-ggsave(paste0(figures_save_path, "SupplementalFigure2A.png"), plot = supp_fig2a, width = 10, height = 8, dpi = 300)
+dev.off()
 
 # CRC Trial
 df_to_plot <- g1_tp %>% 
@@ -1774,8 +1907,9 @@ supp_fig2b <- df_to_plot %>%
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 2))
+pdf(paste0(figures_save_path, "SupplementalFigure2B.pdf"), width = 10, height = 8)
 supp_fig2b
-ggsave(paste0(figures_save_path, "SupplementalFigure2B.png"), plot = supp_fig2b, width = 10, height = 8, dpi = 300)
+dev.off()
 
 # TNBC Trial
 df_to_plot <- g1_tp %>%
@@ -1834,8 +1968,9 @@ supp_fig2c <- df_to_plot %>%
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 5, 1.75, 2, model_growth_rate_class$p.value[3], model_growth_rate_class$p.stars[3], show_values = TRUE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 6, 1.75, 2.25, model_growth_rate_class$p.value[4], model_growth_rate_class$p.stars[4], show_values = TRUE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene_Class == "DDR"), 7, 2, 2.25, model_growth_rate_class$p.value[6], model_growth_rate_class$p.stars[6], show_values = TRUE, textsize = 8, size = 2))
+pdf(paste0(figures_save_path, "SupplementalFigure2C.pdf"), width = 10, height = 8)
 supp_fig2c
-ggsave(paste0(figures_save_path, "SupplementalFigure2C.png"), plot = supp_fig2c, width = 10, height = 8, dpi = 300)
+dev.off()
 ```
 
 # Supplemental Figure 2 - Genes Specific
@@ -1936,8 +2071,9 @@ supp_fig2d <- df_to_plot %>%
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 5, 2.75, 3, model_growth_rate_gene$p.value[5], model_growth_rate_gene$p.stars[5], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 6, 2.75, 3.25, model_growth_rate_gene$p.value[6], model_growth_rate_gene$p.stars[6], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) +
     do.call(geom_signif, default_sig_data(df_to_plot %>% filter(Gene == "*CHEK2*"), 7.1, 3, 3.25, model_growth_rate_gene$p.value[9], model_growth_rate_gene$p.stars[9], show_values = TRUE, hide_ns = FALSE, textsize = 8, size = 2)) 
+pdf(paste0(figures_save_path, "SupplementalFigure2D.pdf"), width = 10, height = 8)
 supp_fig2d
-ggsave(paste0(figures_save_path, "SupplementalFigure2D.png"), plot = supp_fig2d, width = 10, height = 8, dpi = 300)
+dev.off()
 ```
 
 # Supplemental Figure 3 - Bioinformatics Figure 4 Validation
@@ -2012,8 +2148,9 @@ supp_fig3 <- bio_fig4_data %>%
         labels = scales::percent_format(accuracy = 0.01)
     ) +
     annotate("text", x = 0.0001, y = 0.055, label = paste0("Pearson r = ", round(pearson_corr, 2)), size = 6, hjust = 0)
+pdf(paste0(figures_save_path, "SupplementalFigure3.pdf"), width = 10, height = 8)
 supp_fig3
-ggsave(paste0(figures_save_path, "SupplementalFigure3.png"), plot = supp_fig3, width = 10, height = 8, dpi = 300)
+dev.off()
 ```
 
 # Supplemental Figure 4 - Bioinformatics Figure 4 Coefficient of Variation
@@ -2126,7 +2263,7 @@ cv_combined_plot <- coefficient_of_variation_combined %>%
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16)
     ) +
-    geom_signif(y_position = 1.5, xmin = 1, xmax = 2, annotation = paste0("p = ", format(cv_stats$p.value[1], digits = 2), cv_stats$p.stars[1]), tip_length = 0.01, textsize = 5)
+    geom_signif(y_position = 1.5, xmin = 1, xmax = 2, annotation = paste0("P=", format(cv_stats$p.value[1], digits = 2)), tip_length = 0.01, textsize = 5)
 cv_combined_plot
 
 supp_fig4 <- cowplot::plot_grid(
@@ -2135,5 +2272,7 @@ supp_fig4 <- cowplot::plot_grid(
     labels = c("a", "b"),
     label_size = 18
 )
-ggsave(paste0(figures_save_path, "SupplementalFigure4.png"), supp_fig4, width = 12, height = 8)
+pdf(paste0(figures_save_path, "SupplementalFigure4.pdf"), width = 12, height = 8)
+supp_fig4
+dev.off()
 ```
